@@ -3,6 +3,7 @@ import time
 
 from PyQt5.QtCore import QRunnable, pyqtSlot
 
+from engine.main import active_learning
 from view.engine_callback import EngineSignals
 
 
@@ -18,12 +19,7 @@ class Engine(QRunnable):
     @pyqtSlot()
     def run(self):
         try:
-            for i in range(0, 100):
-                self.signals.progress.emit(i, 'in progress')
-                time.sleep(1)
-        except:
-            self.signals.error.emit(100, 'SUCCESS')
-        else:
-            pass
-        finally:
+            active_learning(self.img_path, self.label_path, self.signals)
             self.signals.success.emit(100, 'SUCCESS')
+        except:
+            self.signals.error(0, '')
