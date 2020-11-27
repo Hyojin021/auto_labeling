@@ -6,7 +6,6 @@ import torch
 def evaluate_coco(dataset, model, json_path, threshold=0.05):
     
     model.eval()
-    
     with torch.no_grad():
 
         # start collecting results
@@ -17,19 +16,17 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
             data = dataset[index]
             scale = data['scale']
 
+
+
             # run network
-            if torch.cuda.is_available():
-                scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
-            else:
-                scores, labels, boxes = model(data['img'].permute(2, 0, 1).float().unsqueeze(dim=0))
-            print(score, labels, boxes)
+            scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+
             scores = scores.cpu()
             labels = labels.cpu()
             boxes  = boxes.cpu()
 
             # correct boxes for image scale
             boxes /= scale
-
             if boxes.shape[0] > 0:
                 # change to (x, y, w, h) (MS COCO standard)
                 boxes[:, 2] -= boxes[:, 0]
@@ -56,7 +53,6 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
 
                     # append detection to results
                     results.append(image_result)
-
             # append image to list of processed images
             image_ids.append(dataset.image_ids[index])
 
@@ -67,6 +63,7 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
             return
 
         # write output
+        print(f'json_path: {json_path}')
         json.dump(results, open(f'{json_path}/{dataset.set_name}_bbox_results.json', 'w'), indent=4)
 
         # load results in COCO evaluation tool
@@ -80,5 +77,4 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
         coco_eval.accumulate()
         coco_eval.summarize()
         stats = coco_eval.stats
-
         return stats

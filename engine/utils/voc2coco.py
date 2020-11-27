@@ -150,27 +150,29 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
         f.write(output_json)
 
 
-def main():
+def convert_annot(ann_dir, label_map_path, output_dir):
+
+    label2id = get_label2id(labels_path=label_map_path)
+    ann_paths = get_annpaths(
+        ann_dir=ann_dir
+    )
+    convert_xmls_to_cocojson(
+        annotation_paths=ann_paths,
+        label2id=label2id,
+        output_jsonpath=output_dir,
+        extract_num_from_imgid=True
+    )
+
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='This script support converting voc format xmls to coco format json')
     parser.add_argument('--ann_dir', type=str, default='C:/Users/jsk/data/study_miniproject/annot',
                         help='path of annotation paths list. It is not need when use --ann_dir and --ann_ids')
     parser.add_argument('--labels', type=str, default='../dataloader/dataset/label_map/study_miniproject.name',
                         help='path to label list.')
-    parser.add_argument('--output', type=str, default='C:/Users/jsk/data/study_miniproject/annotations/', help='path to output json file')
+    parser.add_argument('--output', type=str, default='C:/Users/jsk/data/study_miniproject/annotations/',
+                        help='path to output json file')
     parser.add_argument('--ext', type=str, default='', help='additional extension of annotation file')
     args = parser.parse_args()
-    label2id = get_label2id(labels_path=args.labels)
-    ann_paths = get_annpaths(
-        ann_dir=args.ann_dir
-    )
-    convert_xmls_to_cocojson(
-        annotation_paths=ann_paths,
-        label2id=label2id,
-        output_jsonpath=args.output,
-        extract_num_from_imgid=True
-    )
-
-
-if __name__ == '__main__':
-    main()
+    convert_annot(args)

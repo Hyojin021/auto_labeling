@@ -2,7 +2,7 @@ import argparse
 import unittest
 
 from engine.parse_config import ParseConfig
-from engine.train import Trainer
+from engine.trainer.train import Trainer
 
 
 class TestEngine(unittest.TestCase):

@@ -56,7 +56,14 @@ def indent(elem, level=0):
             elem.tail = i
 
 
-def detect_image(img_path, model, class_list, save_dir):
+def entropy_sampling(scores):
+    scores = scores.cpu().numpy()
+    obj_entropy = -np.sum(scores * np.log(scores), axis=1)
+    img_entropy = np.max(obj_entropy)
+
+    return img_entropy
+
+def detect_image(img_path, model, class_list, al):
 
     img_name = os.path.basename(img_path)
     filename, _ = os.path.splitext(img_name)
@@ -106,30 +113,31 @@ def detect_image(img_path, model, class_list, save_dir):
         model.training = False
         model.eval()
 
-        scores, classification, transformed_anchors = model(image)
+        nms_scores, transformed_anchors = model(image)
 
-        idxs = np.where(scores.cpu() > 0.5)
-        bboxes = []
-        labels_name = []
+        if al:
+            img_entropy = entropy_sampling(nms_scores)
+            return img_entropy
+        else:
+            idxs = (nms_scores > 0.5)
+            scores = nms_scores[idxs]
+            scores, classification = scores.max(dim=1)
+            bboxes = []
+            labels_name = []
 
-        for j in range(idxs[0].shape[0]):
-            bbox = transformed_anchors[idxs[0][j], :]
+            for j in range(idxs[0].shape[0]):
+                bbox = transformed_anchors[idxs[0][j], :]
 
-            x1 = int(bbox[0] / scale)
-            y1 = int(bbox[1] / scale)
-            x2 = int(bbox[2] / scale)
-            y2 = int(bbox[3] / scale)
+                x1 = int(bbox[0] / scale)
+                y1 = int(bbox[1] / scale)
+                x2 = int(bbox[2] / scale)
+                y2 = int(bbox[3] / scale)
 
-            key = int(classification[idxs[0][j]])
-            label_name = labels[key]
-            bboxes.append([x1, y1, x2, y2])
-            labels_name.append(label_name)
-
-        if save_dir is not None:
-            xml_savefile_name = os.path.join(save_dir, filename + '.xml')
-            print(f'save_filename : {filename}')
-            save_xml(bboxes, labels_name, image.size(2), image.size(3), img_name, xml_savefile_name)
-
+                key = int(classification[idxs[0][j]])
+                label_name = labels[key]
+                bboxes.append([x1, y1, x2, y2])
+                labels_name.append(label_name)
+            return bboxes, labels
 
 if __name__ == '__main__':
 

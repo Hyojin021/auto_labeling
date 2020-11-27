@@ -1,2 +1,12 @@
 pyqt5==5.10.1
 lxml==4.2.4
+numpy==1.17
+torch==1.4.0
+torchvision==0.5.0
+pandas
+scikit-image
+PyYAML
+opencv-python
+tensorboardX
+pycocotools
+tqdm

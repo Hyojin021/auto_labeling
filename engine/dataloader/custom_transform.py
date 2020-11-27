@@ -7,13 +7,13 @@ from torch.utils.data.sampler import Sampler
 from torchvision import transforms as T
 
 
-def transform_tr(config):
+def transform_tr():
     trasnform = T.Compose([Normalizer(),
                            Resize(),
                            ToTensor()])
     return trasnform
 
-def transform_val(config):
+def transform_val():
     trasnform = T.Compose([Normalizer(),
                            Resize(),
                            ToTensor()])

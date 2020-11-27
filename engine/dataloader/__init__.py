@@ -2,31 +2,10 @@ from engine.dataloader.dataset import coco
 from engine.dataloader.custom_transform import collater, transform_tr, transform_val, AspectRatioBasedSampler
 from torch.utils.data import DataLoader
 
-def get_dataloader(config):
+def get_dataloader(config, img_dir, coco_dir):
 
-    if config.data_style == 'coco':
-
-        train_set = coco.CocoDataset(config.root_dir, set_name='train', transform=transform_tr(config))
-        val_set = coco.CocoDataset(config.root_dir, set_name='val', transform=transform_val(config))
-
-    # elif config.dataset == 'csv':
-    #     if config.csv_train is None:
-    #         raise ValueError('Must provide --csv_train when training on COCO,')
-    #
-    #     if config.csv_classes is None:
-    #         raise ValueError('Must provide --csv_classes when training on COCO,')
-    #
-    #     train_set = CSVDataset(train_file=config.csv_train, class_list=config.csv_classes,
-    #                                transform=transform_tr(config))
-    #
-    #     if config.csv_val is None:
-    #         val_set = None
-    #         print('No validation annotations provided.')
-    #     else:
-    #         val_set = CSVDataset(train_file=config.csv_val, class_list=config.csv_classes,
-    #                                  transform=transform_val(config))
-    # else:
-    #     raise ValueError('Dataset type not understood (must be csv or coco), exiting.')
+    train_set = coco.CocoDataset(img_dir, coco_dir, set_name='train', transform=transform_tr())
+    val_set = coco.CocoDataset(img_dir, coco_dir, set_name='val', transform=transform_val())
 
     n_train_img = train_set.__len__()
     n_val_img = val_set.__len__()

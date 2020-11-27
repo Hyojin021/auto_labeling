@@ -1282,7 +1282,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def train_success(self, progress=100, message=None):
         self.engine_progress.setText('Progress: %d%% Message: %s' % (progress, message))
-        self.importDirImages(self.mainwindow.img_path)
+        self.importDirImages(self.img_path)
         self.actions.train.setEnabled(True)
         print('success', message)
 

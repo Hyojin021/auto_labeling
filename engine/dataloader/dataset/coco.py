@@ -1,26 +1,19 @@
 import numpy as np
-import torch
-import glob
 import os
 from pycocotools.coco import COCO
 from torch.utils.data import Dataset
-from PIL import Image
-import skimage.io
-import skimage.transform
-import skimage.color
-import skimage
 import cv2
 
 
 class CocoDataset(Dataset):
     '''Coco data Style'''
 
-    def __init__(self, root_dir, set_name='val', transform=None):
-        self.root_dir = root_dir
+    def __init__(self, img_dir, annot_dir, set_name='val', transform=None):
+        self.img_dir = img_dir
+        self.annot_dir = annot_dir
         self.set_name = set_name
         self.transfrom = transform
-
-        self.coco = COCO(os.path.join(self.root_dir, 'annotations', f'instances_{set_name}.json'))
+        self.coco = COCO(os.path.join(annot_dir, f'instances_{set_name}.json'))
         self.image_ids = self.coco.getImgIds()
         self.load_classes()
 
@@ -37,14 +30,19 @@ class CocoDataset(Dataset):
         return sample
 
     def load_image(self, image_index):
+
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        path       = os.path.join(self.root_dir, 'img', image_info['file_name'])
-        img = skimage.io.imread(path)
+        path       = os.path.join(self.img_dir, image_info['file_name'])
+
+        img = cv2.imread(path)
 
         if len(img.shape) == 2:
-            img = skimage.color.gray2rgb(img)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        else:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = np.array(img).astype(np.float32)/255.0
 
-        return img.astype(np.float32)/255.0
+        return img
 
 
     def load_annotations(self, image_index):

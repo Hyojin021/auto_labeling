@@ -61,7 +61,7 @@ class FocalLoss(nn.Module):
                     # cls_loss = focal_weight * torch.pow(bce, gamma)
                     cls_loss = focal_weight * bce
                     classification_losses.append(cls_loss.sum())
-                    regression_losses.append(torch.tensor(0).float())
+                    regression_losses.append(torch.tensor(0).float().cuda())
                     
                 else:
                     alpha_factor = torch.ones(classification.shape) * alpha
@@ -172,6 +172,5 @@ class FocalLoss(nn.Module):
                 else:
                     regression_losses.append(torch.tensor(0).float())
 
-        return torch.stack(classification_losses).mean(dim=0, keepdim=True), torch.stack(regression_losses).mean(dim=0, keepdim=True)
-
-    
+        return torch.stack(classification_losses).mean(dim=0, keepdim=True),\
+               torch.stack(regression_losses).mean(dim=0, keepdim=True)
