@@ -83,8 +83,15 @@ class MainWindow(QMainWindow, WindowMixin):
         self.defaultSaveDir = defaultSaveDir
         self.labelFileFormat = settings.get(SETTING_LABEL_FILE_FORMAT, LabelFileFormat.PASCAL_VOC)
 
+        self.engine = Engine()
+        self.engine.signals.progress.connect(self.train_progress)
+        self.engine.signals.success.connect(self.train_success)
+        self.engine.signals.error.connect(self.train_error)
+        self.engine.signals.unconfirmed.connect(self.train_unconfirmed)
+
         # For loading all image under a directory
         self.mImgList = []
+        self.uImgList = []
         self.dirname = None
         self.labelHist = []
         self.lastOpenDir = None
@@ -149,11 +156,32 @@ class MainWindow(QMainWindow, WindowMixin):
         self.labelList.itemChanged.connect(self.labelItemChanged)
         listLayout.addWidget(self.labelList)
 
-
-
         self.dock = QDockWidget(getStr('boxLabelText'), self)
         self.dock.setObjectName(getStr('labels'))
         self.dock.setWidget(labelListContainer)
+
+        self.unconfirmedFileListWidget = QListWidget()
+        self.unconfirmedFileListWidget.itemDoubleClicked.connect(self.unconfirmedFileitemDoubleClicked)
+        unconfirmedFilelistLayout = QVBoxLayout()
+        unconfirmedFilelistLayout.setContentsMargins(0, 0, 0, 0)
+        unconfirmedFilelistLayout.addWidget(self.unconfirmedFileListWidget)
+
+        self.unconfirmedContinueButton = QToolButton()
+        self.unconfirmedCancelButton = QToolButton()
+        self.unconfirmedContinueButton.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        self.unconfirmedCancelButton.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        unconfirmedButtonLayout = QHBoxLayout()
+        unconfirmedButtonLayout.setAlignment(Qt.AlignCenter)
+        unconfirmedButtonLayout.setContentsMargins(0, 0, 0, 0)
+        unconfirmedButtonLayout.addWidget(self.unconfirmedContinueButton)
+        unconfirmedButtonLayout.addWidget(self.unconfirmedCancelButton)
+        unconfirmedFilelistLayout.addLayout(unconfirmedButtonLayout)
+
+        unconfirmedFileListContainer = QWidget()
+        unconfirmedFileListContainer.setLayout(unconfirmedFilelistLayout)
+        self.unconfirmedfiledock = QDockWidget(getStr('unconfirmedFileList'), self)
+        self.unconfirmedfiledock.setObjectName(getStr('unconfirmedFiles'))
+        self.unconfirmedfiledock.setWidget(unconfirmedFileListContainer)
 
         self.fileListWidget = QListWidget()
         self.fileListWidget.itemDoubleClicked.connect(self.fileitemDoubleClicked)
@@ -190,9 +218,10 @@ class MainWindow(QMainWindow, WindowMixin):
 
         self.setCentralWidget(scroll)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.unconfirmedfiledock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.filedock)
+        self.unconfirmedfiledock.setFeatures(QDockWidget.DockWidgetFloatable)
         self.filedock.setFeatures(QDockWidget.DockWidgetFloatable)
-
         self.dockFeatures = QDockWidget.DockWidgetClosable | QDockWidget.DockWidgetFloatable
         self.dock.setFeatures(self.dock.features() ^ self.dockFeatures)
 
@@ -302,6 +331,15 @@ class MainWindow(QMainWindow, WindowMixin):
                       'Ctrl+E', 'edit', getStr('editLabelDetail'),
                       enabled=False)
         self.editButton.setDefaultAction(edit)
+
+        continue_action = action(getStr('continueButton'), self.click_continue,
+                      None, 'continue', getStr('continueButtonDetail'),
+                      enabled=False)
+        self.unconfirmedContinueButton.setDefaultAction(continue_action)
+        cancel_action = action(getStr('cancelButton'), self.click_cancel,
+                                 None, 'cancel', getStr('cancelButtonDetail'),
+                                 enabled=False)
+        self.unconfirmedCancelButton.setDefaultAction(cancel_action)
 
         shapeLineColor = action(getStr('shapeLineColor'), self.chshapeLineColor,
                                 icon='color_line', tip=getStr('shapeLineColorDetail'),
@@ -559,6 +597,8 @@ class MainWindow(QMainWindow, WindowMixin):
         self.dirty = True
         self.actions.save.setEnabled(True)
         self.actions.train.setEnabled(True)
+        self.unconfirmedContinueButton.setEnabled(False)
+        self.unconfirmedCancelButton.setEnabled(False)
 
     def setClean(self):
         self.dirty = False
@@ -696,6 +736,13 @@ class MainWindow(QMainWindow, WindowMixin):
         currIndex = self.mImgList.index(ustr(item.text()))
         if currIndex < len(self.mImgList):
             filename = self.mImgList[currIndex]
+            if filename:
+                self.loadFile(filename)
+
+    def unconfirmedFileitemDoubleClicked(self, item=None):
+        currIndex = self.uImgList.index(ustr(item.text()))
+        if currIndex < len(self.uImgList):
+            filename = self.uImgList[currIndex]
             if filename:
                 self.loadFile(filename)
 
@@ -1246,8 +1293,14 @@ class MainWindow(QMainWindow, WindowMixin):
             item = QListWidgetItem(imgPath)
             self.fileListWidget.addItem(item)
 
-    def train(self, _value=False):
+    def import_unconfirmed_images(self, images):
+        self.unconfirmedFileListWidget.clear()
+        self.uImgList = images
+        for imgPath in self.uImgList:
+            item = QListWidgetItem(imgPath)
+            self.unconfirmedFileListWidget.addItem(item)
 
+    def get_img_path(self):
         img_path = self.lastOpenDir
         if img_path is None:
             if self.defaultSaveDir is not None and len(ustr(self.defaultSaveDir)):
@@ -1257,24 +1310,64 @@ class MainWindow(QMainWindow, WindowMixin):
                     img_path = ustr(self.defaultSaveDir)
             else:
                 img_path = os.path.dirname(self.filePath)
+        return img_path
+
+    def get_label_path(self):
         label_path = self.defaultSaveDir
         if label_path is None:
             self.changeSavedirDialog()
         label_path = self.defaultSaveDir
+        return label_path
+
+
+    def click_cancel(self):
+        print('cancel')
+        self.actions.train.setEnabled(True)
+        self.unconfirmedContinueButton.setEnabled(False)
+        self.unconfirmedCancelButton.setEnabled(False)
+        img_path = self.get_img_path()
+        label_path = self.get_label_path()
+
         if label_path is None:
             print('LABEL PATH IS NONE!')
             return
         self.img_path = img_path
-        self.label_path = img_path
+        self.label_path = label_path
+        print('IMG PATH', img_path)
+        print('LABEL PATH', label_path)
+        self.engine.set_path(img_path, label_path)
+
+    def click_continue(self):
+        print('continue')
+        img_path = self.get_img_path()
+        label_path = self.get_label_path()
+
+        if label_path is None:
+            print('LABEL PATH IS NONE!')
+            return
+        self.img_path = img_path
+        self.label_path = label_path
+        print('IMG PATH', img_path)
+        print('LABEL PATH', label_path)
+        self.engine.set_path(img_path, label_path)
+
+    def train(self, _value=False):
+        img_path = self.get_img_path()
+        label_path = self.get_label_path()
+
+        if label_path is None:
+            print('LABEL PATH IS NONE!')
+            return
+        self.img_path = img_path
+        self.label_path = label_path
         print('IMG PATH', img_path)
         print('LABEL PATH', label_path)
         print('train!')
         self.actions.train.setEnabled(False)
-        engine = Engine(img_path, label_path)
-        engine.signals.progress.connect(self.train_progress)
-        engine.signals.success.connect(self.train_success)
-        engine.signals.error.connect(self.train_error)
-        self.threadPool.start(engine)
+        self.unconfirmedContinueButton.setEnabled(False)
+        self.unconfirmedCancelButton.setEnabled(False)
+        self.engine.set_path(img_path, label_path)
+        self.threadPool.start(self.engine)
 
     def train_progress(self, progress=0, message=None):
         self.engine_progress.setText('Progress: %d%% Message: %s' % (progress, message))
@@ -1286,11 +1379,15 @@ class MainWindow(QMainWindow, WindowMixin):
         self.actions.train.setEnabled(True)
         print('success', message)
 
+    def train_unconfirmed(self, img_list):
+        self.import_unconfirmed_images(img_list)
+        self.unconfirmedContinueButton.setEnabled(True)
+        self.unconfirmedCancelButton.setEnabled(True)
+
     def train_error(self, progress=0, message=None):
         self.engine_progress.setText('Progress: %d%% Message: %s' % (progress, message))
         self.actions.train.setEnabled(True)
         print('error', message)
-
 
 
     def verifyImg(self, _value=False):
