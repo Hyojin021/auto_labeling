@@ -84,10 +84,10 @@ class MainWindow(QMainWindow, WindowMixin):
         self.labelFileFormat = settings.get(SETTING_LABEL_FILE_FORMAT, LabelFileFormat.PASCAL_VOC)
 
         self.engine = Engine()
-        self.engine.signals.progress.connect(self.train_progress)
-        self.engine.signals.success.connect(self.train_success)
-        self.engine.signals.error.connect(self.train_error)
-        self.engine.signals.unconfirmed.connect(self.train_unconfirmed)
+        self.engine.signals.progress.connect(self.active_learning_progress)
+        self.engine.signals.success.connect(self.active_learning_success)
+        self.engine.signals.error.connect(self.active_learning_error)
+        self.engine.signals.unconfirmed.connect(self.active_learning_unconfirmed)
 
         # For loading all image under a directory
         self.mImgList = []
@@ -167,7 +167,9 @@ class MainWindow(QMainWindow, WindowMixin):
         unconfirmedFilelistLayout.addWidget(self.unconfirmedFileListWidget)
 
         self.unconfirmedContinueButton = QToolButton()
+        self.unconfirmedContinueButton.setFixedSize(100, 50)
         self.unconfirmedCancelButton = QToolButton()
+        self.unconfirmedCancelButton.setFixedSize(100, 50)
         self.unconfirmedContinueButton.setToolButtonStyle(Qt.ToolButtonTextOnly)
         self.unconfirmedCancelButton.setToolButtonStyle(Qt.ToolButtonTextOnly)
         unconfirmedButtonLayout = QHBoxLayout()
@@ -247,7 +249,7 @@ class MainWindow(QMainWindow, WindowMixin):
         openPrevImg = action(getStr('prevImg'), self.openPrevImg, 'a', 'prev', getStr('prevImgDetail'))
 
         verify = action(getStr('verifyImg'), self.verifyImg, 'space', 'verify', getStr('verifyImgDetail'))
-        train = action(getStr('train'), self.train, 'space', 'train', getStr('train'), enabled=False)
+        active_learning = action(getStr('active_learning'), self.active_learning, 'space', 'active_learning', getStr('active_learning'), enabled=False)
 
         save = action(getStr('save'), self.saveFile, 'Ctrl+S', 'save', getStr('saveDetail'), enabled=False)
 
@@ -367,7 +369,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.drawSquaresOption.triggered.connect(self.toogleDrawSquare)
 
         # Store actions for further handling.
-        self.actions = struct(train=train, save=save, save_format=save_format, saveAs=saveAs,
+        self.actions = struct(active_learning=active_learning, save=save, save_format=save_format, saveAs=saveAs,
                               open=open, close=close, resetAll=resetAll, deleteImg=deleteImg,
                               lineColor=color1, create=create, delete=delete, edit=edit, copy=copy,
                               createMode=createMode, editMode=editMode, advancedMode=advancedMode,
@@ -434,7 +436,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
-            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, train, None, create, copy, delete, None,
+            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, active_learning, None, create, copy, delete, None,
             zoomIn, zoom, zoomOut, fitWindow, fitWidth)
 
         self.actions.advanced = (
@@ -596,7 +598,7 @@ class MainWindow(QMainWindow, WindowMixin):
     def setDirty(self):
         self.dirty = True
         self.actions.save.setEnabled(True)
-        self.actions.train.setEnabled(True)
+        self.actions.active_learning.setEnabled(True)
         self.unconfirmedContinueButton.setEnabled(False)
         self.unconfirmedCancelButton.setEnabled(False)
 
@@ -1319,10 +1321,9 @@ class MainWindow(QMainWindow, WindowMixin):
         label_path = self.defaultSaveDir
         return label_path
 
-
     def click_cancel(self):
         print('cancel')
-        self.actions.train.setEnabled(True)
+        self.actions.active_learning.setEnabled(True)
         self.unconfirmedContinueButton.setEnabled(False)
         self.unconfirmedCancelButton.setEnabled(False)
         img_path = self.get_img_path()
@@ -1336,6 +1337,8 @@ class MainWindow(QMainWindow, WindowMixin):
         print('IMG PATH', img_path)
         print('LABEL PATH', label_path)
         self.engine.set_path(img_path, label_path)
+        self.engine.set_active_learning(True)
+        self.threadPool.start(self.engine)
 
     def click_continue(self):
         print('continue')
@@ -1350,8 +1353,10 @@ class MainWindow(QMainWindow, WindowMixin):
         print('IMG PATH', img_path)
         print('LABEL PATH', label_path)
         self.engine.set_path(img_path, label_path)
+        self.engine.set_active_learning(True)
+        self.threadPool.start(self.engine)
 
-    def train(self, _value=False):
+    def active_learning(self, _value=False):
         img_path = self.get_img_path()
         label_path = self.get_label_path()
 
@@ -1362,33 +1367,33 @@ class MainWindow(QMainWindow, WindowMixin):
         self.label_path = label_path
         print('IMG PATH', img_path)
         print('LABEL PATH', label_path)
-        print('train!')
-        self.actions.train.setEnabled(False)
+        print('active_learning!')
+        self.actions.active_learning.setEnabled(False)
         self.unconfirmedContinueButton.setEnabled(False)
         self.unconfirmedCancelButton.setEnabled(False)
         self.engine.set_path(img_path, label_path)
+        self.engine.set_active_learning(True)
         self.threadPool.start(self.engine)
 
-    def train_progress(self, progress=0, message=None):
+    def active_learning_progress(self, progress=0, message=None):
         self.engine_progress.setText('Progress: %d%% Message: %s' % (progress, message))
         print('progress', progress, message)
 
-    def train_success(self, progress=100, message=None):
+    def active_learning_success(self, progress=100, message=None):
         self.engine_progress.setText('Progress: %d%% Message: %s' % (progress, message))
         self.importDirImages(self.img_path)
-        self.actions.train.setEnabled(True)
+        self.actions.active_learning.setEnabled(True)
         print('success', message)
 
-    def train_unconfirmed(self, img_list):
+    def active_learning_unconfirmed(self, img_list):
         self.import_unconfirmed_images(img_list)
         self.unconfirmedContinueButton.setEnabled(True)
         self.unconfirmedCancelButton.setEnabled(True)
 
-    def train_error(self, progress=0, message=None):
-        self.engine_progress.setText('Progress: %d%% Message: %s' % (progress, message))
-        self.actions.train.setEnabled(True)
+    def active_learning_error(self, message=None):
+        self.engine_progress.setText('ERROR: %s' % (message))
+        self.actions.active_learning.setEnabled(True)
         print('error', message)
-
 
     def verifyImg(self, _value=False):
         # Proceding next image without dialog if having any label
