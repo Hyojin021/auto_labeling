@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# mypy
+.mypy_cache/
+
+*.zip
+*.pt
+
+# pretrained_weight
+pretrained_weight
+
+# log file
+/engine/run
