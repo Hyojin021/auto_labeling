@@ -64,6 +64,6 @@ class ActiveLearning(object):
             if i+1 == 100: break
         all_entropy = sorted(all_entropy.items(), key=lambda x: x[1], reverse=True)
         img_list = list(dict(all_entropy[:100]).keys())
-        print(img_list)
+        signals.unconfirmed.emit(img_list)
 
 
