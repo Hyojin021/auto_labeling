@@ -16,10 +16,9 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
             data = dataset[index]
             scale = data['scale']
 
-
-
             # run network
-            scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            nms_scores, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            socres, labels = nms_scores.max(dim=1)
 
             scores = scores.cpu()
             labels = labels.cpu()
