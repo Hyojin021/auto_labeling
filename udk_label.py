@@ -11,6 +11,8 @@ from functools import partial
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+from PyQt5.uic.properties import QtGui
+
 import resources
 from view.engine import Engine
 
@@ -1079,6 +1081,7 @@ class MainWindow(QMainWindow, WindowMixin):
                 index = self.mImgList.index(unicodeFilePath)
                 fileWidgetItem = self.fileListWidget.item(index)
                 fileWidgetItem.setSelected(True)
+                self.fileListWidget.scrollToItem(fileWidgetItem, QtGui.QAbstractItemView.PositionAtTop)
             else:
                 self.fileListWidget.clear()
                 self.mImgList.clear()
@@ -1087,6 +1090,7 @@ class MainWindow(QMainWindow, WindowMixin):
                 index = self.uImgList.index(unicodeFilePath)
                 fileWidgetItem = self.unconfirmedFileListWidget.item(index)
                 fileWidgetItem.setSelected(True)
+                self.unconfirmedFileListWidget.scrollToItem(fileWidgetItem, QtGui.QAbstractItemView.PositionAtTop)
             else:
                 self.unconfirmedFileListWidget.clearSelection()
 
