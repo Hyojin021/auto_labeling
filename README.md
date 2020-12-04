@@ -20,7 +20,11 @@ AI 엔진은 Pytorch 기반의 RetinaNet 모델입니다.
 
 conda, venv 등 가상환경위에서 설치하는것을 추천합니다.
 
-아래의 패키지들을 설치해줍니다. 만약 설치 도중 에러가 나는 모듈이 있다면 ISSUE에 등록 부탁드립니다. 
+```shell
+pip install -r requirements.txt
+```
+
+만약 설치 도중 에러가 나는 모듈이 있다면 개별 설치를 진행합니다.
 
 ```Shell
 pip install torch
@@ -93,6 +97,9 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
 6. 반복작업이 어느정도 진행되었다고 판단이 되면 Stop 버튼을 누릅니다. 
    그러면, Label 작업을 하지 않은 나머지 이미지에 대해서 모두 Auto Label을 진행합니다.
    
+## Concept
+
+
 
 ## References
 
