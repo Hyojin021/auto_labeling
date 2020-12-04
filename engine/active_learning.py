@@ -18,8 +18,6 @@ class ActiveLearning(object):
 
     def run(self, img_dir, xml_dir, signals):
 
-        # TODO: image, annot, labelmap 경로만 따로 빼두기(자주 사용하기 때문)
-
         # voc2coco 만들기
         # label_map을 사전에 ui에서 생성할 수 있도록 해야함.
         coco_dir = os.path.join(os.path.dirname(xml_dir), 'annotations')
