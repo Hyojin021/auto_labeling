@@ -30,15 +30,8 @@ class Engine(QRunnable):
             # TODO: 액티브 러닝 실행, 미완료 된 파일 있으면 self.signals.unconfirmed.emit(img_list) 호출,
             # TODO: 주의: img_list는 풀패스로 줘야함, 파일 이름만 주면 안됨
             try:
-                # self.al.run(self.img_path, self.label_path, self.signals)
-                # self.signals.success.emit(100, 'SUCCESS')
-                import os
-                img_list = [
-                    os.path.abspath('%s/1.jpg' % self.img_path),
-                    os.path.abspath('%s/w3c_home.jpg' % self.img_path)
-                ]
-                self.signals.success.emit(100,'success')
-                self.signals.unconfirmed.emit(img_list)
+                self.al.run(self.img_path, self.label_path, self.signals)
+                self.signals.success.emit(100, 'SUCCESS')
             except Exception as e:
                 self.signals.error.emit(str(e))
         else:
