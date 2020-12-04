@@ -89,8 +89,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Save as Pascal voc xml
         self.defaultSaveDir = defaultSaveDir
-        self.labelFileFormat = settings.get(SETTING_LABEL_FILE_FORMAT, LabelFileFormat.PASCAL_VOC)
-
+        # self.labelFileFormat = settings.get(SETTING_LABEL_FILE_FORMAT, LabelFileFormat.PASCAL_VOC)
+        self.labelFileFormat = LabelFileFormat.PASCAL_VOC
         self.engine = Engine()
         self.engine.signals.progress.connect(self.active_learning_progress)
         self.engine.signals.success.connect(self.active_learning_success)
@@ -267,7 +267,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         isUsingPascalVoc = self.labelFileFormat == LabelFileFormat.PASCAL_VOC
         save_format = action('&PascalVOC' if isUsingPascalVoc else '&YOLO',
-                             self.change_format, 'Ctrl+',
+                             self.change_format, None,
                              'format_voc' if isUsingPascalVoc else 'format_yolo',
                              getStr('changeSaveFormat'), enabled=True)
 
@@ -381,7 +381,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.drawSquaresOption.triggered.connect(self.toogleDrawSquare)
 
         # Store actions for further handling.
-        self.actions = struct(active_learning=active_learning, save=save, save_format=save_format, saveAs=saveAs,
+        self.actions = struct(active_learning=active_learning, save=save, saveAs=saveAs, save_format=save_format,
                               open=open, close=close, resetAll=resetAll, deleteImg=deleteImg,
                               lineColor=color1, create=create, delete=delete, edit=edit, copy=copy,
                               createMode=createMode, editMode=editMode, advancedMode=advancedMode,
@@ -427,7 +427,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.displayLabelOption.triggered.connect(self.togglePaintLabelsOption)
 
         addActions(self.menus.file,
-                   (open, opendir, copyPrevBounding, changeSavedir, openAnnotation, self.menus.recentFiles, save, save_format, saveAs, close, resetAll, deleteImg, quit))
+                   (open, opendir, copyPrevBounding, changeSavedir, openAnnotation, self.menus.recentFiles, save, saveAs, save_format, close, resetAll, deleteImg, quit))
         addActions(self.menus.help, (help, showInfo))
         addActions(self.menus.view, (
             self.autoSaving,
@@ -447,12 +447,14 @@ class MainWindow(QMainWindow, WindowMixin):
             action('&Move here', self.moveShape)))
 
         self.tools = self.toolbar('Tools')
+        # save_format
         self.actions.beginner = (
-            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, active_learning, None, create, copy, delete, None,
+            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, active_learning, None, create, copy, delete, None,
             zoomIn, zoom, zoomOut, fitWindow, fitWidth)
 
+        #save_format
         self.actions.advanced = (
-            open, opendir, changeSavedir, openNextImg, openPrevImg, save, save_format, None,
+            open, opendir, changeSavedir, openNextImg, openPrevImg, save, None,
             createMode, editMode, None,
             hideAll, showAll)
 
