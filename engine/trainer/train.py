@@ -9,9 +9,7 @@ from engine.retinanet import coco_eval
 from engine.log.saver import Saver
 from tqdm import tqdm
 from collections import deque
-from engine.parse_config import ParseConfig
 from engine.log import logger, summarise
-from torchsummary import summary
 
 assert torch.__version__.split('.')[0] == '1'
 print('CUDA available: {}'.format(torch.cuda.is_available()))
