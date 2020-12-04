@@ -1,7 +1,6 @@
 # udk_label
 
-[![UBUNTU18.04 LTS](https://img.shields.io/badge/UBUNTU-18.04LTS-orange)](https://www.python.org/downloads/release/python-360/)
-[![WINDOWS10](https://img.shields.io/badge/WINDOWS-10-blue)](https://www.python.org/downloads/release/python-360/)
+[![PYTORCH](https://img.shields.io/badge/Pytorch->=1.4-8118AB)](https://www.python.org/downloads/release/python-360/)
 [![Python 3.7](https://img.shields.io/badge/Python-3.7-3776AB)](https://www.python.org/downloads/release/python-360/)
 
 Object Detection Task는 객체마다 Bounding Box 처리해주는 이른바 Label작업이 필요합니다. 
@@ -41,22 +40,22 @@ pip install lxml
 
 ### Windows
 
-- [pycocotools] Visual C++ error: [https://visualstudio.microsoft.com/ko/vs/older-downloads/](https://visualstudio.microsoft.com/ko/vs/older-downloads/) 
+- **[pycocotools]** Visual C++ error: [https://visualstudio.microsoft.com/ko/vs/older-downloads/](https://visualstudio.microsoft.com/ko/vs/older-downloads/) 
 에서 *재배포 가능 패키지 및 빌드 도구* 하위 *Microsoft Build Tools 2015 업데이트3* 을 설치해주시기 바랍니다. 
 
 ### Ubuntu
 
-- [opencv] lib error: 아래의 패키지를 설치해주세요.
+- **[opencv]** lib error: 아래의 패키지를 설치해주세요.
 
 ```Shell
 sudo apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender1 libfontconfig1
 ```
 
-발생했던 에러에 대해서 제보해주시면 case별로 다루도록 하겠습니다.
+발생했던 에러에 대해서 Issues에 남겨주시면 case별로 다루도록 하겠습니다.
 
 ## How to Use
 
-UI와 기능은 모두 labelImg와 동일한 형태입니다. Auto Labeler를 사용하지 않을 경우에는 기존 방법대로 사용합니다.
+UI와 기능은 모두 labelImg와 동일합니다. Auto Labeler를 사용하지 않을 경우에는 기존 방법대로 사용할 수 있습니다.
 
 labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
 
@@ -64,9 +63,7 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
 
 ### Step
 
-1. 이미지 폴더와 Label이 저장될 폴더를 지정합니다.
-   
-   반드시 이미지와 Label파일의 폴더구조가 아래와 같이되도록 설정해야만 합니다. 
+1. 이미지 폴더와 Label이 저장될 폴더를 지정합니다. 반드시 이미지와 Label파일의 폴더구조가 아래와 같이되도록 설정해야만 합니다. 
    
    ```text
    root_dir/
