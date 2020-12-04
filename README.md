@@ -53,8 +53,7 @@ sudo apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender1 libfontconfig1
 
 UI와 기능은 모두 labelImg와 동일한 형태입니다. Auto Labeler를 사용하지 않을 경우에는 기존 방법대로 사용합니다.
 
-.. image:: /demo/udk_label.png
-     :alt: Demo Image
+image:: /demo/udk_label.png
 
 ### Step
 
