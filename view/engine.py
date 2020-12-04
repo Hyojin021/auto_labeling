@@ -31,13 +31,13 @@ class Engine(QRunnable):
             try:
                 # self.al.run(self.img_path, self.label_path, self.signals)
                 # self.signals.success.emit(100, 'SUCCESS')
-                # img_list = [
-                #     '%s/1.jpg' % self.img_path,
-                #     '%s/2.jpg' % self.img_path,
-                #     '%s/3.jpg' % self.img_path,
-                #     '%s/4.jpg' % self.img_path
-                # ]
-                # self.signals.unconfirmed.emit(img_list)
+                import os
+                img_list = [
+                    os.path.abspath('%s/1.jpg' % self.img_path),
+                    os.path.abspath('%s/w3c_home.jpg' % self.img_path)
+                ]
+
+                self.signals.unconfirmed.emit(img_list)
                 raise Exception('ERRRORORRO')
             except Exception as e:
                 self.signals.error.emit(str(e))

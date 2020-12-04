@@ -35,6 +35,12 @@ from view.libs.hashableQListWidgetItem import HashableQListWidgetItem
 
 __appname__ = 'UDK Label'
 
+class FileQListWidget(QListWidget):
+    focusIn = pyqtSignal(object)
+
+    def focusInEvent(self, e):
+        self.focusIn.emit(e)
+        super(FileQListWidget, self).focusInEvent(e)
 
 class WindowMixin(object):
     def menu(self, title, actions=None):
@@ -57,16 +63,18 @@ class WindowMixin(object):
 class MainWindow(QMainWindow, WindowMixin):
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = list(range(3))
 
-    def init_settings(self):
-        pass
+    def event_unconfirmed_image_focus_in(self, e):
+        self.is_unconfirmed_list = True
+        print('focus unconfirmed')
 
+    def event_total_image_focus_in(self, e):
+        self.is_unconfirmed_list = False
+        print('focus Confirmed')
 
     def __init__(self, defaultFilename=None, defaultPrefdefClassFile=None, defaultSaveDir=None):
         super(MainWindow, self).__init__()
         self.setWindowTitle(__appname__)
-
         self.threadPool = QThreadPool()
-
         # Load setting in the main thread
         # 설정 초기화
         self.settings = Settings()
@@ -92,6 +100,7 @@ class MainWindow(QMainWindow, WindowMixin):
         # For loading all image under a directory
         self.mImgList = []
         self.uImgList = []
+        self.is_unconfirmed_list = False
         self.dirname = None
         self.labelHist = []
         self.lastOpenDir = None
@@ -160,8 +169,10 @@ class MainWindow(QMainWindow, WindowMixin):
         self.dock.setObjectName(getStr('labels'))
         self.dock.setWidget(labelListContainer)
 
-        self.unconfirmedFileListWidget = QListWidget()
+        self.unconfirmedFileListWidget = FileQListWidget()
         self.unconfirmedFileListWidget.itemDoubleClicked.connect(self.unconfirmedFileitemDoubleClicked)
+        self.unconfirmedFileListWidget.focusIn.connect(self.event_unconfirmed_image_focus_in)
+
         unconfirmedFilelistLayout = QVBoxLayout()
         unconfirmedFilelistLayout.setContentsMargins(0, 0, 0, 0)
         unconfirmedFilelistLayout.addWidget(self.unconfirmedFileListWidget)
@@ -185,8 +196,9 @@ class MainWindow(QMainWindow, WindowMixin):
         self.unconfirmedfiledock.setObjectName(getStr('unconfirmedFiles'))
         self.unconfirmedfiledock.setWidget(unconfirmedFileListContainer)
 
-        self.fileListWidget = QListWidget()
+        self.fileListWidget = FileQListWidget()
         self.fileListWidget.itemDoubleClicked.connect(self.fileitemDoubleClicked)
+        self.fileListWidget.focusIn.connect(self.event_total_image_focus_in)
         filelistLayout = QVBoxLayout()
         filelistLayout.setContentsMargins(0, 0, 0, 0)
         filelistLayout.addWidget(self.fileListWidget)
@@ -599,8 +611,6 @@ class MainWindow(QMainWindow, WindowMixin):
         self.dirty = True
         self.actions.save.setEnabled(True)
         self.actions.active_learning.setEnabled(True)
-        self.unconfirmedContinueButton.setEnabled(False)
-        self.unconfirmedCancelButton.setEnabled(False)
 
     def setClean(self):
         self.dirty = False
@@ -1070,6 +1080,13 @@ class MainWindow(QMainWindow, WindowMixin):
             else:
                 self.fileListWidget.clear()
                 self.mImgList.clear()
+        if unicodeFilePath and self.unconfirmedFileListWidget.count() > 0:
+            if unicodeFilePath in self.uImgList:
+                index = self.uImgList.index(unicodeFilePath)
+                fileWidgetItem = self.unconfirmedFileListWidget.item(index)
+                fileWidgetItem.setSelected(True)
+            else:
+                self.unconfirmedFileListWidget.clearSelection()
 
         if unicodeFilePath and os.path.exists(unicodeFilePath):
             if LabelFile.isLabelFile(unicodeFilePath):
@@ -1297,6 +1314,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def import_unconfirmed_images(self, images):
         self.unconfirmedFileListWidget.clear()
+        self.uImgList = []
         self.uImgList = images
         for imgPath in self.uImgList:
             item = QListWidgetItem(imgPath)
@@ -1338,6 +1356,8 @@ class MainWindow(QMainWindow, WindowMixin):
         print('LABEL PATH', label_path)
         self.engine.set_path(img_path, label_path)
         self.engine.set_active_learning(True)
+        self.unconfirmedFileListWidget.clear()
+        self.uImgList = []
         self.threadPool.start(self.engine)
 
     def click_continue(self):
@@ -1354,6 +1374,8 @@ class MainWindow(QMainWindow, WindowMixin):
         print('LABEL PATH', label_path)
         self.engine.set_path(img_path, label_path)
         self.engine.set_active_learning(True)
+        self.unconfirmedFileListWidget.clear()
+        self.uImgList = []
         self.threadPool.start(self.engine)
 
     def active_learning(self, _value=False):
@@ -1373,6 +1395,8 @@ class MainWindow(QMainWindow, WindowMixin):
         self.unconfirmedCancelButton.setEnabled(False)
         self.engine.set_path(img_path, label_path)
         self.engine.set_active_learning(True)
+        self.unconfirmedFileListWidget.clear()
+        self.uImgList = []
         self.threadPool.start(self.engine)
 
     def active_learning_progress(self, progress=0, message=None):
@@ -1426,15 +1450,20 @@ class MainWindow(QMainWindow, WindowMixin):
         if not self.mayContinue():
             return
 
-        if len(self.mImgList) <= 0:
+        if self.is_unconfirmed_list:
+            last_img_list = self.uImgList
+        else:
+            last_img_list = self.mImgList
+
+        if len(last_img_list) <= 0:
             return
 
         if self.filePath is None:
             return
 
-        currIndex = self.mImgList.index(self.filePath)
+        currIndex = last_img_list.index(self.filePath)
         if currIndex - 1 >= 0:
-            filename = self.mImgList[currIndex - 1]
+            filename = last_img_list[currIndex - 1]
             if filename:
                 self.loadFile(filename)
 
@@ -1451,19 +1480,25 @@ class MainWindow(QMainWindow, WindowMixin):
         if not self.mayContinue():
             return
 
-        if len(self.mImgList) <= 0:
+        if self.is_unconfirmed_list:
+            last_img_list = self.uImgList
+        else:
+            last_img_list = self.mImgList
+
+        if len(last_img_list) <= 0:
             return
 
         filename = None
         if self.filePath is None:
-            filename = self.mImgList[0]
+            filename = last_img_list[0]
         else:
-            currIndex = self.mImgList.index(self.filePath)
-            if currIndex + 1 < len(self.mImgList):
-                filename = self.mImgList[currIndex + 1]
+            currIndex = last_img_list.index(self.filePath)
+            if currIndex + 1 < len(last_img_list):
+                filename = last_img_list[currIndex + 1]
 
         if filename:
             self.loadFile(filename)
+
 
     def openFile(self, _value=False):
         if not self.mayContinue():
