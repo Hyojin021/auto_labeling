@@ -35,5 +35,5 @@ class Engine(QRunnable):
             except Exception as e:
                 self.signals.error.emit(str(e))
         else:
-            # TODO: 추론
+            # TODO: 추론부 작성할것
             pass
