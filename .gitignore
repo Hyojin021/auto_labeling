@@ -134,8 +134,12 @@ dmypy.json
 *.zip
 *.pt
 
+
+#### Custom ignore
+
 # pretrained_weight
 pretrained_weight
 
 # log file
 /engine/run
+.idea
