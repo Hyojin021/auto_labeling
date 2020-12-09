@@ -102,3 +102,5 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
 
 - [tzutalin/labelImg](https://github.com/tzutalin/labelImg)
 - [yhenon/pytorch-retinanet](https://github.com/yhenon/pytorch-retinanet)
+- [victoresque/pytorch-template](https://github.com/victoresque/pytorch-template)
+- [active_learning](https://www.datacamp.com/community/tutorials/active-learning)
