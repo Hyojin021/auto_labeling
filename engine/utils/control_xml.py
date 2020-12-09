@@ -11,13 +11,27 @@ def create_label_map(xml_dir, label_map_path):
         labels += label
 
     labels = list(set(labels))
+    label_map = []
 
-    with open(label_map_path, 'w', encoding='utf-8') as f:
-        for i, label in enumerate(labels):
-            if i == len(labels)-1:
-                f.write(label)
-            else:
-                f.write(label + '\n')
+    if not os.path.isfile(label_map_path):
+        with open(label_map_path, 'w', encoding='utf-8') as f:
+            for i, label in enumerate(labels):
+                if i != len(labels)-1:
+                    f.write(label + '\n')
+                else:
+                    f.write(label)
+    else:
+        with open(label_map_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            for line in lines:
+                label_map.append(line[:-1])
+
+            add_labels = list(set(labels).difference(label_map))
+
+        with open(label_map_path, 'a+', encoding='utf-8') as f:
+            for i, add_label in enumerate(add_labels):
+                f.write(add_label + '\n')
+
 
 
 def get_category(xml_path):
