@@ -123,6 +123,10 @@ class Trainer(object):
     def validation(self, epoch):
         print('Evaluating dataset')
         stats = coco_eval.evaluate_coco(self.val_set, self.retinanet, self.saver.directory)
+
+        if stats is None:
+            return
+
         # stats: 0~11까지 12개의 값이 존재
         # 0: mAP / 1: map .5 / 2: map .75 / 3: ap small / 4: ap medium / 5: ap large/
         # 6: ar Det1 / 7: ar Det10 / 8: ar Det100 / 9: ar small / 10: ar medium / 11: ar large
@@ -147,22 +151,3 @@ class Trainer(object):
         if f1_score > self.best_f1_score:
             self.best_f1_score = f1_score
             self.saver.save_checkpoint(self.retinanet.module, f1_score)
-
-
-
-def main():
-    parser = argparse.ArgumentParser('train/val main')
-    parser.add_argument('--load-config', '-c', default='./engine/cfg/config.yaml')
-
-    config = ParseConfig(parser).parse_args()
-    print(config)
-
-    trainer = Trainer(config)
-
-    for epoch in range(trainer.config.start_epoch, trainer.config.epoch):
-        trainer.train(epoch)
-        trainer.validation(epoch)
-    trainer.writer.close()
-
-if __name__ == '__main__':
-    main()
