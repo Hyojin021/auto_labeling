@@ -10,22 +10,25 @@ from engine.cfg.config import Config
 class ActiveLearning(object):
     def __init__(self):
         super(ActiveLearning, self).__init__()
+        self.config = Config()
 
+        if os.path.isfile(self.config.label_map_path):
+            os.remove(self.config.label_map_path)
+            print('======> label_map is exist, then file is deleted')
 
     def run(self, img_dir, xml_dir, signals):
-        config = Config()
 
         # label_map.names 만들
-        create_label_map(xml_dir, config.label_map_path)
+        create_label_map(xml_dir, self.config.label_map_path)
 
         # voc2coco 만들기
         # label_map을 사전에 ui에서 생성할 수 있도록 해야함.
         coco_dir = os.path.join(os.path.dirname(xml_dir), 'annotations')
-        convert_annot(xml_dir, config.label_map_path, coco_dir)
+        convert_annot(xml_dir, self.config.label_map_path, coco_dir)
 
         # 학습부 (추후 Active Learning할때 trainer.validation에서 mAP 추출해야함)
 
-        trainer = Trainer(config, img_dir, coco_dir)
+        trainer = Trainer(self.config, img_dir, coco_dir)
 
         progress_range = range(trainer.config.start_epoch, trainer.config.epoch)
         progress_len = len(progress_range)
@@ -48,7 +51,7 @@ class ActiveLearning(object):
         img_paths = [img_dir + f'/{i}.bmp' for i in img_name]
 
         # 2. Best Model Checkpoint 로드하기
-        model_path = f'./engine/run/{config.projectname}/best_f1_score_model.pth.tar'
+        model_path = f'./engine/run/{self.config.projectname}/best_f1_score_model.pth.tar'
         model = torch.load(model_path)
 
         # 3. 모델에 이미지 하나씩 넣어서 추론하고, entropy 구하기
@@ -56,7 +59,7 @@ class ActiveLearning(object):
         all_entropy = {}
         for i, img_path in enumerate(img_paths):
             progress = (i + 1) / len(img_paths) * 100
-            entropy = detect_image(img_path, model, config.label_map_path, al=True)
+            entropy = detect_image(img_path, model, self.config.label_map_path, al=True)
             all_entropy[img_path] = entropy
             signals.progress.emit(progress, f'Inferencing image : {i} / {len(img_paths)} complete')
         all_entropy = sorted(all_entropy.items(), key=lambda x: x[1], reverse=True)
