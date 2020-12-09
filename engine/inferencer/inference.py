@@ -4,69 +4,27 @@ import time
 import os
 import cv2
 import argparse
-import xml.etree.ElementTree as ET
+from engine.utils.control_xml import save_xml
+from engine.cfg.config import Config
 
-
-def save_xml(bboxs, classes, heigth, width, fname, savefilepath):
-    annotation = ET.Element('annotation')  # root
-    ET.SubElement(annotation, 'folder').text = 'Unkown'
-    ET.SubElement(annotation, 'filename').text = str(fname)
-    ET.SubElement(annotation, 'path').text = 'Unkown'
-    source = ET.SubElement(annotation, 'source')
-    ET.SubElement(source, 'database').text = 'Unkown'
-    size = ET.SubElement(annotation, 'size')
-    ET.SubElement(size, 'width').text = str(width)
-    ET.SubElement(size, 'height').text = str(heigth)
-    ET.SubElement(size, 'depth').text = str(3)
-    ET.SubElement(annotation, 'segmented').text = str(0)
-    for i in range(len(bboxs)):
-        object = ET.SubElement(annotation, 'object')
-        ET.SubElement(object, 'name').text = str(classes[i])
-        ET.SubElement(object, 'pose').text = 'Unspecified'
-        ET.SubElement(object, 'truncated').text = str(0)
-        ET.SubElement(object, 'difficult').text = str(0)
-        bndbox = ET.SubElement(object, 'bndbox')
-        ET.SubElement(bndbox, 'xmin').text = str(int(bboxs[i][0]))
-        ET.SubElement(bndbox, 'ymin').text = str(int(bboxs[i][1]))
-        ET.SubElement(bndbox, 'xmax').text = str(int(bboxs[i][2]))
-        ET.SubElement(bndbox, 'ymax').text = str(int(bboxs[i][3]))
-
-    indent(annotation)
-    tree = ET.ElementTree(annotation)
-
-    tree.write(savefilepath)
-
-    return tree
-
-
-def indent(elem, level=0):
-    i = "\n" + level * " "
-
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + " "
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            indent(elem, level + 1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
 
 
 def entropy_sampling(scores):
+
     scores = scores.cpu().numpy()
-    obj_entropy = -np.sum(scores * np.log(scores), axis=1)
+    # idxs = np.where(scores > 0.5)
+
+    obj_entropy = -np.sum(scores * np.log2(scores), axis=1)
+
     img_entropy = np.max(obj_entropy)
 
     return img_entropy
 
-def detect_image(img_path, model, class_list, al):
+def detect_image(img_path, model, class_list, al, xml_dir=None):
 
     img_name = os.path.basename(img_path)
-    filename, _ = os.path.splitext(img_name)
+    filename, ext = os.path.splitext(img_name)
+
     with open(class_list, 'r', encoding='utf-8') as f:
         classes = f.read().split()
 
@@ -119,12 +77,14 @@ def detect_image(img_path, model, class_list, al):
             img_entropy = entropy_sampling(nms_scores)
             return img_entropy
         else:
-            idxs = (nms_scores > 0.5)
-            scores = nms_scores[idxs]
-            scores, classification = scores.max(dim=1)
+            nms_scores, classification = nms_scores.max(dim=1)
+            idxs = np.where(nms_scores.cpu() > 0.5)
+            # 객체탐지를 못하거나, 진짜로 객채가 없으면 idxs가 없음.
+            if len(idxs[0]) == 0:
+                return print('Not Detect Object')
+
             bboxes = []
             labels_name = []
-
             for j in range(idxs[0].shape[0]):
                 bbox = transformed_anchors[idxs[0][j], :]
 
@@ -137,7 +97,29 @@ def detect_image(img_path, model, class_list, al):
                 label_name = labels[key]
                 bboxes.append([x1, y1, x2, y2])
                 labels_name.append(label_name)
-            return bboxes, labels
+            save_xml_name = os.path.join(xml_dir, filename + '.xml')
+            save_xml(bboxes, labels, image.shape[0], image.shape[1], img_name, save_xml_name)
+
+
+def run(img_dir, xml_dir, signals):
+
+    ann_name = [os.path.splitext(f.name)[0] for f in os.scandir(xml_dir)]
+    img_name = [os.path.splitext(f.name)[0] for f in os.scandir(img_dir)]
+    img_name = list(set(img_name).difference(set(ann_name)))
+    img_paths = [img_dir + f'/{i}.bmp' for i in img_name]
+
+    config = Config()
+    # 2. Best Model Checkpoint 로드하기
+    model_path = f'./engine/run/{config.projectname}/best_f1_score_model.pth.tar'
+    model = torch.load(model_path)
+
+    # 3. 모델에 이미지 하나씩 넣어서 추론하고, entropy 구하기
+
+    for i, img_path in enumerate(img_paths):
+        progress = (i + 1) / len(img_paths) * 100
+        detect_image(img_path, model, config.label_map_path, al=False, xml_dir=xml_dir)
+        signals.progress.emit(progress, f'Inferencing image : {i} / {len(img_paths)} complete')
+
 
 if __name__ == '__main__':
 
