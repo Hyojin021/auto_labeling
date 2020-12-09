@@ -1361,7 +1361,7 @@ class MainWindow(QMainWindow, WindowMixin):
         print('IMG PATH', img_path)
         print('LABEL PATH', label_path)
         self.engine.set_path(img_path, label_path)
-        self.engine.set_active_learning(True)
+        self.engine.set_active_learning(False)
         self.unconfirmedFileListWidget.clear()
         self.uImgList = []
         self.threadPool.start(self.engine)
@@ -1498,9 +1498,12 @@ class MainWindow(QMainWindow, WindowMixin):
         if self.filePath is None:
             filename = last_img_list[0]
         else:
-            currIndex = last_img_list.index(self.filePath)
-            if currIndex + 1 < len(last_img_list):
-                filename = last_img_list[currIndex + 1]
+            try:
+                currIndex = last_img_list.index(self.filePath)
+                if currIndex + 1 < len(last_img_list):
+                    filename = last_img_list[currIndex + 1]
+            except:
+                pass
 
         if filename:
             self.loadFile(filename)
