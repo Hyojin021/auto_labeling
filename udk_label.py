@@ -1464,14 +1464,19 @@ class MainWindow(QMainWindow, WindowMixin):
         if len(last_img_list) <= 0:
             return
 
+        filename = None
         if self.filePath is None:
             return
 
-        currIndex = last_img_list.index(self.filePath)
-        if currIndex - 1 >= 0:
-            filename = last_img_list[currIndex - 1]
-            if filename:
-                self.loadFile(filename)
+        try:
+            currIndex = last_img_list.index(self.filePath)
+            if currIndex - 1 >= 0:
+                filename = last_img_list[currIndex - 1]
+        except:
+            pass
+
+        if filename:
+            self.loadFile(filename)
 
     def openNextImg(self, _value=False):
         # Proceding prev image without dialog if having any label
