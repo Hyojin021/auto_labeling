@@ -2,29 +2,29 @@ import os
 from engine.trainer.train import Trainer
 from engine.inferencer.inference import detect_image
 import torch
+from engine.utils.control_xml import create_label_map
 from engine.utils.voc2coco import convert_annot
-from .cfg.config import Config
+from engine.cfg.config import Config
 
 
 class ActiveLearning(object):
     def __init__(self):
         super(ActiveLearning, self).__init__()
-        self.label_map = './engine/dataloader/dataset/label_map/defect.name'
-        # 뭘 상속 받아야한다고 했는데??f
-        # signals.progress.emit(1, 'in progress')
-        # signals.error.emit(100, 'SUCCESS')
-        # signals.success.emit(100, 'SUCCESS')
 
 
     def run(self, img_dir, xml_dir, signals):
+        config = Config()
+
+        # label_map.names 만들
+        create_label_map(xml_dir, config.label_map_path)
 
         # voc2coco 만들기
         # label_map을 사전에 ui에서 생성할 수 있도록 해야함.
         coco_dir = os.path.join(os.path.dirname(xml_dir), 'annotations')
-        convert_annot(xml_dir, self.label_map, coco_dir)
+        convert_annot(xml_dir, config.label_map_path, coco_dir)
 
         # 학습부 (추후 Active Learning할때 trainer.validation에서 mAP 추출해야함)
-        config = Config()
+
         trainer = Trainer(config, img_dir, coco_dir)
 
         progress_range = range(trainer.config.start_epoch, trainer.config.epoch)
@@ -56,10 +56,9 @@ class ActiveLearning(object):
         all_entropy = {}
         for i, img_path in enumerate(img_paths):
             progress = (i + 1) / len(img_paths) * 100
-            entropy = detect_image(img_path, model, self.label_map, al=True)
+            entropy = detect_image(img_path, model, config.label_map_path, al=True)
             all_entropy[img_path] = entropy
             signals.progress.emit(progress, f'Inferencing image : {i} / {len(img_paths)} complete')
-            if i+1 == 100: break
         all_entropy = sorted(all_entropy.items(), key=lambda x: x[1], reverse=True)
         img_list = list(dict(all_entropy[:100]).keys())
         signals.unconfirmed.emit(img_list)
