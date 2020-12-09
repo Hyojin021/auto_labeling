@@ -14,6 +14,9 @@ def entropy_sampling(scores):
     scores = scores.cpu().numpy()
     # idxs = np.where(scores > 0.5)
 
+    # 아무것도 detect 하지 못한경우 scores가 0으로 됨. -> 학습이 매우 안되었다는 반증임.
+    if len(scores) == 0:
+        return 0
     obj_entropy = -np.sum(scores * np.log2(scores), axis=1)
 
     img_entropy = np.max(obj_entropy)
