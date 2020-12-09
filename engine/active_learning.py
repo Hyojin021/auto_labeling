@@ -40,7 +40,7 @@ class ActiveLearning(object):
             progress = (epoch + 1) / progress_len * 100
             signals.progress.emit(progress, f'epoch {epoch} complete')
 
-        if config.tensorboard:
+        if self.config.tensorboard:
             trainer.writer.close()
 
         # 추론부
@@ -52,6 +52,9 @@ class ActiveLearning(object):
 
         # 2. Best Model Checkpoint 로드하기
         model_path = f'./engine/run/{self.config.projectname}/best_f1_score_model.pth.tar'
+
+        if not os.path.isfile(model_path):
+            signals.error.emit('The amount of training data is insufficient.')
         model = torch.load(model_path)
 
         # 3. 모델에 이미지 하나씩 넣어서 추론하고, entropy 구하기
