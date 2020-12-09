@@ -265,7 +265,7 @@ class ResNet(nn.Module):
             if scores_over_thresh.sum() == 0:
                 print('No boxes to NMS')
                 # no boxes to NMS, just return
-                return [torch.zeros(0), torch.zeros(0), torch.zeros(0, 4)]
+                return [torch.zeros(0), torch.zeros(0, 4)]
             classification = classification[:, scores_over_thresh, :]
             transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
             scores = scores[:, scores_over_thresh, :]
