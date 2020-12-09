@@ -2,6 +2,7 @@ class Config(object):
 
     # Global Config
     projectname = 'udk_labeler'
+    label_map_path = './engine/dataloader/dataset/label_map/udk_labeler.names'
     data_style = 'coco'
     tensorboard = False
 
