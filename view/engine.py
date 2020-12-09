@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QRunnable, pyqtSlot
 
 from engine.active_learning import ActiveLearning
+from engine.inferencer import inference
 from view.engine_callback import EngineSignals
 
 
@@ -32,8 +33,9 @@ class Engine(QRunnable):
             try:
                 self.al.run(self.img_path, self.label_path, self.signals)
                 self.signals.success.emit(100, 'SUCCESS')
+
             except Exception as e:
                 self.signals.error.emit(str(e))
         else:
-            # TODO: 추론부 작성할것
+            inference.run(self.img_path, self.label_path, self.signals)
             pass
