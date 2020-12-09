@@ -16,10 +16,8 @@ def create_label_map(xml_dir, label_map_path):
     if not os.path.isfile(label_map_path):
         with open(label_map_path, 'w', encoding='utf-8') as f:
             for i, label in enumerate(labels):
-                if i != len(labels)-1:
                     f.write(label + '\n')
-                else:
-                    f.write(label)
+
     else:
         with open(label_map_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
