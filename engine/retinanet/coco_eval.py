@@ -21,7 +21,7 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
 
             if boxes.shape[0] > 0:
 
-                socres, labels = nms_scores.max(dim=1)
+                scores, labels = nms_scores.max(dim=1)
 
                 scores = scores.cpu()
                 labels = labels.cpu()
