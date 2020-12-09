@@ -115,14 +115,14 @@ class CocoDataset(Dataset):
         for key, value in self.classes.items():
             self.labels[value] = key
 
+        return self.labels
+
     def coco_label_to_label(self, coco_label):
         return self.coco_labels_inverse[coco_label]
 
     def label_to_coco_label(self, label):
         return self.coco_labels[label]
 
-    def num_classes(self):
-        return 7
 
 if __name__ == '__main__':
 
