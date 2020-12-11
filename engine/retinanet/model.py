@@ -1,3 +1,7 @@
+# Original author: Yann Henon
+# Adapted from https://github.com/yhenon/pytorch-retinanet/blob/master/retinanet/model.py
+# Modified by jsk1107
+
 import torch.nn as nn
 import torch
 import math
