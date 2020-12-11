@@ -1,3 +1,7 @@
+# Original author: Yann Henon
+# Adapted from https://github.com/yhenon/pytorch-retinanet/blob/master/retinanet/coco_eval.py
+# Modified by jsk1107
+
 from pycocotools.cocoeval import COCOeval
 import json
 import torch
