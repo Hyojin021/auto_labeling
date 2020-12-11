@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# Original author: tzutalin
+# Adapted from https://github.com/tzutalin/labelImg/blob/master/labelImg.py
+# Modified by devwock, jsk1107
+
 import argparse
 import asyncio
 import codecs
