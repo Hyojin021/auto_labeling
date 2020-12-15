@@ -74,7 +74,7 @@ class Resize(object):
         self.weight = resize[1]
 
     def __call__(self, sample: Dict[str, int],
-                 min_side=608, max_side=1024):
+                 min_side=512, max_side=512):
 
         img, annots = sample['img'], sample['annot']
 
