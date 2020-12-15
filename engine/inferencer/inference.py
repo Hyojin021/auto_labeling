@@ -11,14 +11,15 @@ from engine.cfg.config import Config
 
 def entropy_sampling(scores):
 
-    scores = scores.cpu().numpy()
-    # idxs = np.where(scores > 0.5)
-
     # 아무것도 detect 하지 못한경우 scores가 0으로 됨. -> 학습이 매우 안되었다는 반증임.
     if len(scores) == 0:
         return 0
-    obj_entropy = -np.sum(scores * np.log2(scores), axis=1)
 
+    scores = scores.cpu().numpy()
+    # idxs = np.where(scores > 0.5)
+
+    # scroe의 원소중에서 0이거나 0에수렴할정도로 작은경우가 있음. 1e-05를 더해서 방
+    obj_entropy = -np.sum(scores * np.log2(scores + 1e-05), axis=1)
     img_entropy = np.max(obj_entropy)
 
     return img_entropy
@@ -55,7 +56,15 @@ def detect_image(img_path, model, class_list, al, xml_dir=None):
     # resize the image with the computed scale
 
     image = cv2.resize(image, (int(round(cols * scale)), int(round((rows * scale)))))
-    image = np.array(image).astype(np.float)
+    h, w, c = image.shape
+
+    pad_w = 32 - h % 32
+    pad_h = 32 - w % 32
+
+    new_img = np.zeros((h + pad_w, w + pad_h, c)).astype(np.float32)
+    new_img[:h, :w, :] = image.astype(np.float32)
+
+    image = np.array(new_img).astype(np.float)
     image /= 255
     image -= [0.485, 0.456, 0.406]
     image /= [0.229, 0.224, 0.225]
@@ -80,9 +89,11 @@ def detect_image(img_path, model, class_list, al, xml_dir=None):
             img_entropy = entropy_sampling(nms_scores)
             return img_entropy
         else:
+
             nms_scores, classification = nms_scores.max(dim=1)
             idxs = np.where(nms_scores.cpu() > 0.5)
-            # 객체탐지를 못하거나, 진짜로 객채가 없으면 idxs가 없음.
+
+            # score가 0.5 이상이것이 없는경우
             if len(idxs[0]) == 0:
                 return print('Not Detect Object')
 
@@ -107,9 +118,8 @@ def detect_image(img_path, model, class_list, al, xml_dir=None):
 def run(img_dir, xml_dir, signals):
 
     ann_name = [os.path.splitext(f.name)[0] for f in os.scandir(xml_dir)]
-    img_name = [os.path.splitext(f.name)[0] for f in os.scandir(img_dir)]
-    img_name = list(set(img_name).difference(set(ann_name)))
-    img_paths = [img_dir + f'/{i}.bmp' for i in img_name]
+    img_name_dict = {os.path.splitext(f.name)[0]: os.path.splitext(f.name)[1] for f in os.scandir(img_dir)}
+    img_names = list(set(img_name_dict.keys()).difference(set(ann_name)))
 
     config = Config()
     # 2. Best Model Checkpoint 로드하기
@@ -118,10 +128,15 @@ def run(img_dir, xml_dir, signals):
 
     # 3. 모델에 이미지 하나씩 넣어서 추론하고, entropy 구하기
 
-    for i, img_path in enumerate(img_paths):
-        progress = (i + 1) / len(img_paths) * 100
+    total_img_cnt = len(img_names)
+    for i, img_name in enumerate(img_names):
+        progress = (i + 1) / total_img_cnt * 100
+
+        ext = img_name_dict[img_name]
+        img_path = os.path.join(img_dir, img_name + ext)
+
         detect_image(img_path, model, config.label_map_path, al=False, xml_dir=xml_dir)
-        signals.progress.emit(progress, f'Inferencing image : {i} / {len(img_paths)} complete')
+        signals.progress.emit(progress, f'Inferencing image : {i} / {total_img_cnt} complete')
 
 
 if __name__ == '__main__':
