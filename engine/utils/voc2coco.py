@@ -25,15 +25,15 @@ def get_annpaths(ann_dir: str = None) -> List[str]:
 
 
 def get_image_info(annotation_root, extract_num_from_imgid=True):
-    path = annotation_root.findtext('path')
-    if path == 'Unkown':
-        filename = annotation_root.findtext('filename')
-    else:
-        filename = os.path.basename(path)
+    filename = annotation_root.findtext('filename')
+    # if path == 'Unkown':
+    #     filename = annotation_root.findtext('filename')
+    # else:
+    #     filename = os.path.basename(path)
     img_name = os.path.basename(filename)
     img_id = os.path.splitext(img_name)[0]
     if extract_num_from_imgid and isinstance(img_id, str):
-        img_id = int(re.findall(r'\d+', img_id)[0])
+        img_id = int(''.join(re.findall(r'\d+', img_id)))
 
     size = annotation_root.find('size')
     width = int(size.findtext('width'))
