@@ -3,6 +3,8 @@ import os
 from pycocotools.coco import COCO
 from torch.utils.data import Dataset
 import cv2
+import skimage
+import skimage.io
 
 
 class CocoDataset(Dataset):
@@ -33,14 +35,14 @@ class CocoDataset(Dataset):
 
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path       = os.path.join(self.img_dir, image_info['file_name'])
+        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        # if len(img.shape) == 2:
+        #     print(f'{path} ======> Grayscale Img')
+        #     img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        # else:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        img = cv2.imread(path)
-
-        if len(img.shape) == 2:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        else:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = np.array(img).astype(np.float32)/255.0
+        img = img.astype(np.float32)/255.0
 
         return img
 
@@ -70,7 +72,6 @@ class CocoDataset(Dataset):
         # transform from [x, y, w, h] to [x1, y1, x2, y2]
         annotations[:, 2] = annotations[:, 0] + annotations[:, 2]
         annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
-
         return annotations
         # # Get Ground Truth
         # ann_idx = self.coco.getAnnIds(imgIds=self.image_ids[idx], iscrowd=False)
