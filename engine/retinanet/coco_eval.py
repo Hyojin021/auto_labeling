@@ -21,19 +21,19 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
             scale = data['scale']
 
             # run network
-            nms_scores, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            # nms_scores, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            # print('nms_scores', scores)
+
+            # correct boxes for image scale
+            boxes /= scale
 
             if boxes.shape[0] > 0:
-
-                scores, labels = nms_scores.max(dim=1)
+                # scores, labels = nms_scores.max(dim=1)
 
                 scores = scores.cpu()
                 labels = labels.cpu()
                 boxes = boxes.cpu()
-
-                # correct boxes for image scale
-                boxes /= scale
-
                 # change to (x, y, w, h) (MS COCO standard)
                 boxes[:, 2] -= boxes[:, 0]
                 boxes[:, 3] -= boxes[:, 1]
