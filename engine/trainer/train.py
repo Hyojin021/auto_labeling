@@ -140,7 +140,7 @@ class Trainer(object):
             self.writer.add_scalar('Precision/mAP(large)', stats[5], epoch)
             self.writer.add_scalar('Recall/AR@1', stats[6], epoch)
             self.writer.add_scalar('Recall/AR@10', stats[7], epoch)
-            self.writer.add_scalar('Recall/AR@10', stats[8], epoch)
+            self.writer.add_scalar('Recall/AR@100', stats[8], epoch)
             self.writer.add_scalar('Recall/AR@100(small)', stats[9], epoch)
             self.writer.add_scalar('Recall/AR@100(medium)', stats[10], epoch)
             self.writer.add_scalar('Recall/AR@100(large)', stats[11], epoch)
