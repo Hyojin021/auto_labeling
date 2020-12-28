@@ -10,13 +10,19 @@ from torchvision.ops import nms
 from engine.retinanet.utils import BasicBlock, Bottleneck, BBoxTransform, ClipBoxes
 from engine.retinanet.anchors import Anchors
 from engine.retinanet import losses
+import torchvision
+from torch.hub import load_state_dict_from_url
+from torchvision.models import resnet50
 
+
+torchvision.models.detection.retinanet_resnet50_fpn()
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
     'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
     'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+    "retinanet_resnet50_fpn_coco": "https://download.pytorch.org/models/retinanet_resnet50_fpn_coco-eeacb38b.pth",
 }
 
 
@@ -263,22 +269,59 @@ class ResNet(nn.Module):
             transformed_anchors = self.regressBoxes(anchors, regression)
             transformed_anchors = self.clipBoxes(transformed_anchors, img_batch)
 
-            scores = torch.max(classification, dim=2, keepdim=True)[0]
-            scores_over_thresh = (scores > 0.05)[0, :, 0]
+            finalResult = [[], [], []]
 
-            if scores_over_thresh.sum() == 0:
-                print('No boxes to NMS')
-                # no boxes to NMS, just return
-                return [torch.zeros(1, 1), torch.zeros(1, 4)]
-            classification = classification[:, scores_over_thresh, :]
-            transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
-            scores = scores[:, scores_over_thresh, :]
-            anchors_nms_idx = nms(
-                transformed_anchors[0, :, :], scores[0, :, 0], iou_threshold=0.5)
-            # nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(
-            #     dim=1)
-            nms_scores = classification[0, anchors_nms_idx, :]
-            return [nms_scores, transformed_anchors[0, anchors_nms_idx, :]]
+            finalScores = torch.Tensor([])
+            finalAnchorBoxesIndexes = torch.Tensor([]).long()
+            finalAnchorBoxesCoordinates = torch.Tensor([])
+
+            if torch.cuda.is_available():
+                finalScores = finalScores.cuda()
+                finalAnchorBoxesIndexes = finalAnchorBoxesIndexes.cuda()
+                finalAnchorBoxesCoordinates = finalAnchorBoxesCoordinates.cuda()
+
+            for i in range(classification.shape[2]):
+                scores = torch.squeeze(classification[:, :, i])
+                scores_over_thresh = (scores > 0.05)
+                if scores_over_thresh.sum() == 0:
+                    # no boxes to NMS, just continue
+                    continue
+                scores = scores[scores_over_thresh]
+                anchorBoxes = torch.squeeze(transformed_anchors)
+                anchorBoxes = anchorBoxes[scores_over_thresh]
+                anchors_nms_idx = nms(anchorBoxes, scores, 0.5)
+                #
+                # finalResult[0].extend(scores[anchors_nms_idx])
+                # finalResult[1].extend(torch.tensor([i] * anchors_nms_idx.shape[0]))
+                # finalResult[2].extend(anchorBoxes[anchors_nms_idx])
+                # finalScores = torch.cat((finalScores, nms_socres[0, anchors_nms_idx, :]))
+                finalScores = torch.cat((finalScores, scores[anchors_nms_idx]))
+                finalAnchorBoxesIndexesValue = torch.tensor([i] * anchors_nms_idx.shape[0])
+                if torch.cuda.is_available():
+                    finalAnchorBoxesIndexesValue = finalAnchorBoxesIndexesValue.cuda()
+
+                finalAnchorBoxesIndexes = torch.cat((finalAnchorBoxesIndexes, finalAnchorBoxesIndexesValue))
+                finalAnchorBoxesCoordinates = torch.cat((finalAnchorBoxesCoordinates, anchorBoxes[anchors_nms_idx]))
+
+            return [finalScores, finalAnchorBoxesIndexes, finalAnchorBoxesCoordinates]
+            # scores = torch.max(classification, dim=2, keepdim=True)[0]
+            #
+            # scores_over_thresh = (scores > 0.05)[0, :, 0]
+            #
+            # if scores_over_thresh.sum() == 0:
+            #     print('No boxes to NMS')
+            #     # no boxes to NMS, just return
+            #     return [torch.zeros(1, 1), torch.zeros(0, 4)]
+            # classification = classification[:, scores_over_thresh, :]
+            # transformed_anchors = transformed_anchors[:, scores_over_thresh, :]
+            # scores = scores[:, scores_over_thresh, :]
+            # anchors_nms_idx = nms(
+            #     transformed_anchors[0, :, :], scores[0, :, 0], iou_threshold=0.5) <---- NMS 잘못만들었음.
+            #
+            # # nms_scores, nms_class = classification[0, anchors_nms_idx, :].max(
+            # #     dim=1)
+            # nms_scores = classification[0, anchors_nms_idx, :]
+            # return [nms_scores, transformed_anchors[0, anchors_nms_idx, :]]
 
 
 def resnet18(num_classes, pretrained=False, **kwargs):
@@ -311,6 +354,9 @@ def resnet50(num_classes, pretrained=False, **kwargs):
     model = ResNet(num_classes, Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet50'], model_dir='pretrained_weight'), strict=False)
+        # state_dict = load_state_dict_from_url(model_urls['retinanet_resnet50_fpn_coco'],
+        #                                       progress=True)
+        # model.load_state_dict(state_dict)
     return model
 
 
