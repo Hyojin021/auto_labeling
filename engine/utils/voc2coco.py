@@ -24,7 +24,7 @@ def get_annpaths(ann_dir: str = None) -> List[str]:
         return ann_paths
 
 
-def get_image_info(annotation_root, extract_num_from_imgid=True):
+def get_image_info(annotation_root, cnt, extract_num_from_imgid=True):
     filename = annotation_root.findtext('filename')
     # if path == 'Unkown':
     #     filename = annotation_root.findtext('filename')
@@ -33,7 +33,8 @@ def get_image_info(annotation_root, extract_num_from_imgid=True):
     img_name = os.path.basename(filename)
     img_id = os.path.splitext(img_name)[0]
     if extract_num_from_imgid and isinstance(img_id, str):
-        img_id = int(''.join(re.findall(r'\d+', img_id)))
+        img_id = cnt
+        # img_id = int(''.join(re.findall(r'\d+', img_id)))
 
     size = annotation_root.find('size')
     width = int(size.findtext('width'))
@@ -92,13 +93,14 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
     train_annotation_paths = annotation_paths[:int(num_file * 0.8)]
     val_annotation_paths = annotation_paths[int(num_file * 0.8):]
 
-
+    cnt = 1
     for a_path in tqdm(train_annotation_paths):
         # Read annotation xml
         ann_tree = ET.parse(a_path)
         ann_root = ann_tree.getroot()
 
         img_info = get_image_info(annotation_root=ann_root,
+                                  cnt=cnt,
                                   extract_num_from_imgid=extract_num_from_imgid)
         img_id = img_info['id']
         output_json_dict['images'].append(img_info)
@@ -108,6 +110,8 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
             ann.update({'image_id': img_id, 'id': bnd_id})
             output_json_dict['annotations'].append(ann)
             bnd_id = bnd_id + 1
+
+        cnt+=1
 
     for label, label_id in label2id.items():
         category_info = {'supercategory': 'none', 'id': label_id, 'name': label}
@@ -131,6 +135,7 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
         ann_root = ann_tree.getroot()
 
         img_info = get_image_info(annotation_root=ann_root,
+                                  cnt=cnt,
                                   extract_num_from_imgid=extract_num_from_imgid)
         img_id = img_info['id']
         output_json_dict['images'].append(img_info)
@@ -140,6 +145,7 @@ def convert_xmls_to_cocojson(annotation_paths: List[str],
             ann.update({'image_id': img_id, 'id': bnd_id})
             output_json_dict['annotations'].append(ann)
             bnd_id = bnd_id + 1
+        cnt+=1
 
     for label, label_id in label2id.items():
         category_info = {'supercategory': 'none', 'id': label_id, 'name': label}
