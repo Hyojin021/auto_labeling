@@ -1,40 +1,14 @@
 import torch
 import numpy as np
-import time
 import os
 import cv2
 import argparse
-from engine.utils.control_xml import save_xml
-from engine.cfg.config import Config
+from engine.utils.control_xml import save_xml, load_label_map
+from engine.retinanet.post_process import *
+from engine.retinanet.utils import BBoxTransform, ClipBoxes
 
 
-
-def entropy_sampling(scores):
-
-    # 아무것도 detect 하지 못한경우 scores가 0으로 됨. -> 학습이 매우 안되었다는 반증임.
-    if len(scores) == 0:
-        return 0
-
-    scores = scores.cpu().numpy()
-    # idxs = np.where(scores > 0.5)
-
-    # scroe의 원소중에서 0이거나 0에수렴할정도로 작은경우가 있음. 1e-05를 더해서 방
-    obj_entropy = -np.sum(scores * np.log2(scores + 1e-05), axis=1)
-    img_entropy = np.max(obj_entropy)
-
-    return img_entropy
-
-def detect_image(img_path, model, class_list, al, xml_dir=None):
-
-    img_name = os.path.basename(img_path)
-    filename, ext = os.path.splitext(img_name)
-
-    with open(class_list, 'r', encoding='utf-8') as f:
-        classes = f.read().split()
-
-    labels = {}
-    for i, cls in enumerate(classes):
-        labels[i] = cls
+def load_image(img_path):
 
     image = cv2.imread(img_path)
     rows, cols, cns = image.shape
@@ -74,48 +48,80 @@ def detect_image(img_path, model, class_list, al, xml_dir=None):
 
     image = torch.as_tensor(image, dtype=torch.float32)
 
+    return image, scale
+
+
+def entropy_sampling(scores):
+
+    # 아무것도 detect 하지 못한경우 scores가 0으로 됨. -> 학습이 매우 안되었다는 반증임.
+    if len(scores) == 0:
+        return 99
+
+    scores = scores.cpu().numpy()
+    # idxs = np.where(scores > 0.5)
+
+    # scroe의 원소중에서 0이거나 0에수렴할정도로 작은경우가 있음. 1e-05를 더해서 방지
+    img_entropy = -np.sum(scores * np.log2(scores + 1e-05))
+
+    return img_entropy
+
+def detect_image(img_path, model, class_list, al, xml_dir=None):
+
+    img_name = os.path.basename(img_path)
+    filename, ext = os.path.splitext(img_name)
+
+    label_map = load_label_map(class_list)
+    image, scale = load_image(img_path)
+
+    regress_boxes = BBoxTransform()
+    clip_boxes = ClipBoxes()
+
+
     with torch.no_grad():
 
-        if torch.cuda.is_available():
-            image = image.cuda()
-            model = model.cuda()
+        if not torch.cuda.is_available():
+            raise RuntimeError(f'cuda must be used')
 
-        model.training = False
+        image = image.cuda()
+        model = model.cuda()
+
         model.eval()
 
-        nms_scores, transformed_anchors = model(image)
+        classification, regression, anchors = model(image)
+
+
+        scores, labels, boxes = post_process(image, classification, regression, anchors, regress_boxes, clip_boxes)
+
 
         if al:
-            img_entropy = entropy_sampling(nms_scores)
+            img_entropy = entropy_sampling(scores)
             return img_entropy
         else:
-
-            nms_scores, classification = nms_scores.max(dim=1)
-            idxs = np.where(nms_scores.cpu() > 0.5)
-
+            idxs = np.where(scores.cpu() > 0.5)[0]
             # score가 0.5 이상이것이 없는경우
-            if len(idxs[0]) == 0:
+            if len(idxs) == 0:
                 return print('Not Detect Object')
 
             bboxes = []
             labels_name = []
-            for j in range(idxs[0].shape[0]):
-                bbox = transformed_anchors[idxs[0][j], :]
+            for j in range(idxs.shape[0]):
+                bbox = boxes[idxs[j], :]
 
                 x1 = int(bbox[0] / scale)
                 y1 = int(bbox[1] / scale)
                 x2 = int(bbox[2] / scale)
                 y2 = int(bbox[3] / scale)
 
-                key = int(classification[idxs[0][j]])
-                label_name = labels[key]
+                key = int(labels[idxs[j]])
+                label_name = label_map[key]
                 bboxes.append([x1, y1, x2, y2])
                 labels_name.append(label_name)
             save_xml_name = os.path.join(xml_dir, filename + '.xml')
-            save_xml(bboxes, labels, image.shape[0], image.shape[1], img_name, save_xml_name)
+            save_xml(bboxes, labels_name, image.shape[0], image.shape[1], img_name, save_xml_name)
 
 
 def run(img_dir, xml_dir, signals):
+    from engine.cfg.config import Config
 
     ann_name = [os.path.splitext(f.name)[0] for f in os.scandir(xml_dir)]
     img_name_dict = {os.path.splitext(f.name)[0]: os.path.splitext(f.name)[1] for f in os.scandir(img_dir)}
@@ -136,7 +142,7 @@ def run(img_dir, xml_dir, signals):
         img_path = os.path.join(img_dir, img_name + ext)
 
         detect_image(img_path, model, config.label_map_path, al=False, xml_dir=xml_dir)
-        signals.progress.emit(progress, f'Inferencing image : {i} / {total_img_cnt} complete')
+        signals.progress.emit(progress, f'Inferencing image : {i+1} / {total_img_cnt} complete')
 
 
 if __name__ == '__main__':
