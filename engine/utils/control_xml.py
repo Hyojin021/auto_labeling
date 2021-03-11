@@ -1,6 +1,18 @@
 import xml.etree.ElementTree as ET
 import os
 
+
+def load_label_map(label_map_path):
+
+    with open(label_map_path, 'r', encoding='utf-8') as f:
+        classes = f.read().split()
+
+    labels = {}
+    for i, cls in enumerate(classes):
+        labels[i] = cls
+    return labels
+
+
 def create_label_map(xml_dir, label_map_path):
 
     xml_paths = [os.path.join(xml_dir, f.name) for f in os.scandir(xml_dir)]
