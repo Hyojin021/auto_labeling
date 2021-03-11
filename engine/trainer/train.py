@@ -8,6 +8,7 @@ from engine.retinanet import model
 from engine.retinanet import coco_eval
 from engine.log.saver import Saver
 from tqdm import tqdm
+from engine.retinanet import losses
 from collections import deque
 from engine.log import logger, summarise
 
@@ -37,17 +38,27 @@ class Trainer(object):
 
         # Define Network
         if self.config.depth == 18:
-            self.retinanet = model.resnet18(num_classes=self.n_classes, pretrained=True)
+            self.retinanet = model.resnet18(num_classes=80, pretrained=False)
         elif self.config.depth == 34:
-            self.retinanet = model.resnet34(num_classes=self.n_classes, pretrained=True)
+            self.retinanet = model.resnet34(num_classes=80, pretrained=False)
         elif self.config.depth == 50:
-            self.retinanet = model.resnet50(num_classes=self.n_classes, pretrained=True)
+            self.retinanet = model.resnet50(num_classes=80, pretrained=False)
+            # self.retinanet = model.resnet50(num_classes=self.n_classes, pretrained=True)
         elif self.config.depth == 101:
-            self.retinanet = model.resnet101(num_classes=self.n_classes, pretrained=True)
+            self.retinanet = model.resnet101(num_classes=80, pretrained=False)
         elif self.config.depth == 152:
-            self.retinanet = model.resnet152(num_classes=self.n_classes, pretrained=True)
+            self.retinanet = model.resnet152(num_classes=80, pretrained=False)
         else:
             raise ValueError('Unsupported model depth, must be one of 18, 34, 50, 101, 152')
+
+        # Define resume
+        self.best_f1_score = .0
+        if self.config.resume is not None:
+            checkpoint = torch.load(self.config.resume)
+            self.retinanet.load_state_dict(checkpoint)
+
+            from engine.retinanet.model import ClassificationModel
+            self.retinanet.classificationModel = ClassificationModel(256, num_classes=self.n_classes)
 
         # Define Optimizer
         self.optimizer = optim.Adam(self.retinanet.parameters(), lr=self.config.lr)
@@ -56,6 +67,7 @@ class Trainer(object):
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=3, verbose=True)
 
         # Define loss
+        self.loss = losses.FocalLoss()
         self.loss_hist = deque(maxlen=500)
 
         # Define cuda
@@ -63,12 +75,6 @@ class Trainer(object):
             self.retinanet = torch.nn.DataParallel(self.retinanet).cuda()
         else:
             raise ValueError('=> Cuda is not available. Check cuda')
-
-        # Define resume
-        self.best_f1_score = .0
-        if self.config.resume is not None:
-            self.retinanet = torch.load(self.config.resume)
-            self.retinanet.cuda()
 
         # check model summary
         # summary(self.retinanet, (3, 512, 512))
@@ -85,9 +91,11 @@ class Trainer(object):
                 self.optimizer.zero_grad()
 
                 img = data['img'].cuda().float()
-                annot = data['annot']
+                annot = data['annot'].cuda()
 
-                cls_loss, reg_loss = self.retinanet([img, annot])
+                classification, regression, anchors = self.retinanet(img)
+
+                cls_loss, reg_loss = self.loss(classification, regression, anchors, annot)
 
                 cls_loss = cls_loss.mean()
                 reg_loss = reg_loss.mean()
