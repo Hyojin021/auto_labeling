@@ -104,6 +104,13 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
    
 8. 모든 작업은 Background에서 동작하며, 터미널에서 자세한 Log를 확인할 수 있습니다.
    
+## TODO
+
+- [ ] EfficientDet 모델 교체
+- [ ] 앱 실행 후 파일 이동, 수정, 제거 예외처리추가
+- [ ] Auto Label 버튼 추가
+- [ ] Custom Model 콤보박스 추가
+
 ## References
 
 - [tzutalin/labelImg](https://github.com/tzutalin/labelImg)
