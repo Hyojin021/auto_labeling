@@ -5,6 +5,11 @@
 from pycocotools.cocoeval import COCOeval
 import json
 import torch
+from engine.retinanet.post_process import post_process
+from engine.retinanet.utils import BBoxTransform, ClipBoxes
+
+regress_boxes = BBoxTransform()
+clip_boxes = ClipBoxes()
 
 
 def evaluate_coco(dataset, model, json_path, threshold=0.05):
@@ -21,25 +26,24 @@ def evaluate_coco(dataset, model, json_path, threshold=0.05):
             scale = data['scale']
 
             # run network
-            # nms_scores, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
-            scores, labels, boxes = model(data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
-            # print('nms_scores', scores)
+            img = data['img'].permute(2, 0, 1).cuda().float().unsqueeze(dim=0)
+            classification, regression, anchors = model(img)
+            scores, labels, boxes = post_process(img, classification, regression, anchors, regress_boxes, clip_boxes)
 
             # correct boxes for image scale
             boxes /= scale
 
             if boxes.shape[0] > 0:
-                # scores, labels = nms_scores.max(dim=1)
 
                 scores = scores.cpu()
                 labels = labels.cpu()
                 boxes = boxes.cpu()
+
                 # change to (x, y, w, h) (MS COCO standard)
                 boxes[:, 2] -= boxes[:, 0]
                 boxes[:, 3] -= boxes[:, 1]
 
                 # compute predicted labels and scores
-                #for box, score, label in zip(boxes[0], scores[0], labels[0]):
                 for box_id in range(boxes.shape[0]):
                     score = float(scores[box_id])
                     label = int(labels[box_id])
