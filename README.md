@@ -80,7 +80,7 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
        |      |-- ...
    ```
    
-2. ![pretrained_weight](https://drive.google.com/file/d/1yLmjq3JtXi841yXWBxst0coAgR26MNBS/view)를 다운 받습니다.
+2. [pretrained_weight](https://drive.google.com/file/d/1yLmjq3JtXi841yXWBxst0coAgR26MNBS/view)를 다운 받습니다.
    `/udk_labeler/`하위에 `pretrained_weight` 폴더를 생성한 후 그 하위에 넣어줍니다.  
    
 3. 사용자가 직접 Label작업을 진행합니다. 초기에 얼마나 많이 Labeling 되어있는지에 따라 작업 속도와 성능에 차이를 주게 됩니다. 
