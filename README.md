@@ -10,8 +10,8 @@ Object Detection Task는 객체마다 Bounding Box 처리해주는 이른바 Lab
 
 **udk_label**는 오픈소스 labelImg를 수정하여 개발되었습니다. 
 대부분의 UI는 변경된것이 없으며 **active learning** 기반의 AI 엔진이 탑재되어있습니다.
-AI 엔진은 Pytorch 기반의 RetinaNet 모델입니다.
-*__(때문에 GPU 장치가 있어야 사용가능하며 cuda, cudnn은 필수적입니다.)__*
+AI 엔진은 RetinaNet(ResNet50_FPN) 모델이며 COCO dataset으로 학습된 pretrained 모델을 사용합니다.
+*__(GPU 장치가 있어야 사용가능하며 cuda, cudnn은 필수적입니다.)__*
    
 추후에 다양한 AI모델을 추가할 예정에 있으며, UI/UX를 고려한 디자인도 보완해나갈 예정입니다.
 
@@ -80,24 +80,20 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
        |      |-- ...
    ```
    
-2. 사용자가 직접 Label작업을 진행합니다. 초기에 얼마나 많이 Labeling 되어있는지에 따라 작업 속도와 성능에 차이를 주기 때문에 
-   전체이미지 대비 10% 또는 100장 이상의 이미지에 대하여 Label을 진행하는것을 추천합니다.
+2. 사용자가 직접 Label작업을 진행합니다. 초기에 얼마나 많이 Labeling 되어있는지에 따라 작업 속도와 성능에 차이를 주게 됩니다.  
+   경험상 최소 1000장 이상의 이미지에 대하여 Label을 진행하는것을 추천합니다.
    
-3. 활성화된 Active Learning 버튼을 누릅니다. 우측 하단에 상태바에 학습과 추론의 진행상황이 표시됩니다.
+3. 활성화된 Active Learning 버튼을 누릅니다. 우측 하단에 상태바에 학습과 추론의 진행상황이 표시됩니다.(모든 작업은 Background에서 동작하며, 터미널에서 자세한 Log를 확인할 수 있습니다.)
 
-4. 완료가 되면 Unconfirmed File List에 100장의 이미지 목록이 나타납니다.
-   사용자는 해당 이미지에 대해서 다시 Label 작업을 진행합니다. 작업이 완료되면 Continue 버튼을 누릅니다. 
+4. 완료가 되면 Unconfirmed File List에 100장의 이미지 목록이 나타납니다. 100장의 이미지는 AI 모델이 Label처리 하기 어려운 이미지를
+   뜻하며, 사용자가 직접 Label 작업을 다시 진행합니다. 작업이 완료되면 Continue 버튼을 누릅니다. 
    우측 하단에 상태바에 학습과 추론의 진행상황이 표시됩니다. 
 
-5. 4번 과정을 반복해서 진행합니다.
+5. 4번 과정을 반복해서 진행합니다. GTX1060(6GB) 기준으로 약 2000장의 이미지를 1epoch 처리하는데 10분가량 소요됩니다.
    
 6. 반복작업이 어느정도 진행되었다고 판단이 되면 Stop 버튼을 누릅니다. 
    그러면, Label 작업을 하지 않은 나머지 이미지에 대해서 모두 Auto Label을 진행합니다.
    
-## Concept
-
-
-
 ## References
 
 - [tzutalin/labelImg](https://github.com/tzutalin/labelImg)
