@@ -17,4 +17,4 @@ class Config(object):
     model = 'retinanet'
     depth = 50
     resume = None
-    lr = 0.00001
+    lr = 0.00005
