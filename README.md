@@ -80,26 +80,29 @@ labelImg의 사용법은 원작자의 github를 참고하시기 바랍니다.
        |      |-- ...
    ```
    
-2. 사용자가 직접 Label작업을 진행합니다. 초기에 얼마나 많이 Labeling 되어있는지에 따라 작업 속도와 성능에 차이를 주게 됩니다.  
+2. ![pretrained_weight](https://drive.google.com/file/d/1yLmjq3JtXi841yXWBxst0coAgR26MNBS/view)를 다운 받습니다.
+   `/udk_labeler/`하위에 `pretrained_weight` 폴더를 생성한 후 그 하위에 넣어줍니다.  
+   
+3. 사용자가 직접 Label작업을 진행합니다. 초기에 얼마나 많이 Labeling 되어있는지에 따라 작업 속도와 성능에 차이를 주게 됩니다. 
    경험상 최소 1000장 이상의 이미지에 대하여 Label을 진행하는것을 추천합니다.
    
-3. 활성화된 Active Learning 버튼을 누릅니다. 우측 하단에 상태바에 학습과 추론의 진행상황이 표시됩니다.
+4. 활성화된 Active Learning 버튼을 누릅니다. 우측 하단에 상태바에 학습과 추론의 진행상황이 표시됩니다.
    Default 셋팅은 아래와 같습니다. 자신의 HW 성능에 따라 해당 값을 조절하시면 됩니다. `udk_labeler/engine/cfg/config.py`
    - Image_Resize: 512x512 (현재 수정 불가)
    - Batch_Size: 6
    - lr: 0.00005
    - epoch: 10 (GTX1060 6GB 기준으로 약 2000장의 이미지를 1epoch 처리하는데 10분가량 소요됩니다.)
    
-4. 완료가 되면 Unconfirmed File List에 100장의 이미지 목록이 나타납니다. 100장의 이미지는 AI 모델이 Label처리 하기 어려운 이미지를
+5. 완료가 되면 Unconfirmed File List에 100장의 이미지 목록이 나타납니다. 100장의 이미지는 AI 모델이 Label처리 하기 어려운 이미지를
    뜻하며, 사용자가 직접 Label 작업을 다시 진행합니다. 작업이 완료되면 Continue 버튼을 누릅니다. 
    우측 하단에 상태바에 학습과 추론의 진행상황이 표시됩니다. 
 
-5. 4번 과정을 반복해서 진행합니다. 
+6. 4번 과정을 반복해서 진행합니다. 
    
-6. 반복작업이 어느정도 진행되었다고 판단이 되면 Stop 버튼을 누릅니다. 
+7. 반복작업이 어느정도 진행되었다고 판단이 되면 Stop 버튼을 누릅니다. 
    그러면, Label 작업을 하지 않은 나머지 이미지에 대해서 모두 Auto Label을 진행합니다.
    
-7. 모든 작업은 Background에서 동작하며, 터미널에서 자세한 Log를 확인할 수 있습니다.
+8. 모든 작업은 Background에서 동작하며, 터미널에서 자세한 Log를 확인할 수 있습니다.
    
 ## References
 

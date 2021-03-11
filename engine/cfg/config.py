@@ -16,5 +16,5 @@ class Config(object):
     # Config model
     model = 'retinanet'
     depth = 50
-    resume = None
+    resume = 'pretrained_weight/coco_resnet_50_map_0_335_state_dict.pt'
     lr = 0.00005
