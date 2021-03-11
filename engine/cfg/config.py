@@ -7,9 +7,9 @@ class Config(object):
     tensorboard = False
 
     # Config DataLoader
-    batch_size = 5
+    batch_size = 6
     start_epoch = 0
-    epoch = 1
+    epoch = 10
     num_worker = 4
     pin_memory = True
 
