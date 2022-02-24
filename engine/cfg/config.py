@@ -2,14 +2,14 @@ class Config(object):
 
     # Global Config
     projectname = 'udk_labeler'
-    label_map_path = './engine/dataloader/dataset/label_map/udk_labeler.names'
+    label_map_path = '/home/jinn/auto_labeling/engine/dataloader/dataset/label_map/udk_labeler.names'
     data_style = 'coco'
     tensorboard = False
 
     # Config DataLoader
     batch_size = 5
     start_epoch = 0
-    epoch = 10
+    epoch = 1
     num_worker = 4
     pin_memory = True
 

@@ -1,3 +1,4 @@
+from tabnanny import filename_only
 import torch
 import numpy as np
 import os
@@ -65,11 +66,9 @@ def entropy_sampling(scores):
 
     return img_entropy
 
-def detect_image(img_path, model, class_list, al, xml_dir=None):
-
+def detect_image(i, total_img_cnt, img_path, model, class_list, al, xml_dir=None):
     img_name = os.path.basename(img_path)
     filename, ext = os.path.splitext(img_name)
-
     label_map = load_label_map(class_list)
     image, scale = load_image(img_path)
 
@@ -100,8 +99,9 @@ def detect_image(img_path, model, class_list, al, xml_dir=None):
             idxs = np.where(scores.cpu() > 0.5)[0]
             # score가 0.5 이상이것이 없는경우
             if len(idxs) == 0:
-                return print('Not Detect Object')
-
+                fail = 1
+                return fail, print(f'({i}/{total_img_cnt}) {filename}:Not Detect Object')
+            fail = 0
             bboxes = []
             labels_name = []
             for j in range(idxs.shape[0]):
@@ -117,8 +117,9 @@ def detect_image(img_path, model, class_list, al, xml_dir=None):
                 bboxes.append([x1, y1, x2, y2])
                 labels_name.append(label_name)
             save_xml_name = os.path.join(xml_dir, filename + '.xml')
+            print(f'({i}/{total_img_cnt}) {filename}: create xml')
             save_xml(bboxes, labels_name, image.shape[0], image.shape[1], img_name, save_xml_name)
-
+            return fail, print(f'({i}/{total_img_cnt}) {filename}: create xml')
 
 def run(img_dir, xml_dir, signals):
     from engine.cfg.config import Config
@@ -135,16 +136,18 @@ def run(img_dir, xml_dir, signals):
     # 3. 모델에 이미지 하나씩 넣어서 추론하고, entropy 구하기
 
     total_img_cnt = len(img_names)
+    fail_cnt = 0
     for i, img_name in enumerate(img_names):
         progress = (i + 1) / total_img_cnt * 100
 
         ext = img_name_dict[img_name]
         img_path = os.path.join(img_dir, img_name + ext)
 
-        detect_image(img_path, model, config.label_map_path, al=False, xml_dir=xml_dir)
-        signals.progress.emit(progress, f'Inferencing image : {i+1} / {total_img_cnt} complete')
-
-
+        fail, _ = detect_image(i+1, total_img_cnt, img_path, model, config.label_map_path, al=False, xml_dir=xml_dir)
+        if fail == 1:
+            fail_cnt += 1
+    success_cnt = total_img_cnt - fail_cnt
+    print(f'Success img: {success_cnt}, Fail img: {fail_cnt}')
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Simple script for visualizing result of training.')

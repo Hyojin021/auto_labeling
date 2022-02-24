@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QRunnable, pyqtSlot
 
 from engine.active_learning import ActiveLearning
+# from engine.active_labeling import ActiveLearning
 from engine.inferencer import inference
 from view.engine_callback import EngineSignals
 
@@ -31,7 +32,7 @@ class Engine(QRunnable):
             # TODO: 액티브 러닝 실행, 미완료 된 파일 있으면 self.signals.unconfirmed.emit(img_list) 호출,
             # TODO: 주의: img_list는 풀패스로 줘야함, 파일 이름만 주면 안됨
             try:
-                self.al.run(self.img_path, self.label_path, self.signals)
+                self.al.run(self.img_path, self.label_path)
                 self.signals.success.emit(100, 'SUCCESS')
 
             except Exception as e:
